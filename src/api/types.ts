@@ -37,6 +37,7 @@ export interface ApiErrorResponse {
   fieldErrors?: Record<string, string>;
 }
 
+<<<<<<< Updated upstream
 export interface UserSummary {
   id: string;
   username: string;
@@ -66,4 +67,22 @@ export interface Page<T> {
 export interface CreatePostRequest {
   content: string;
   visibility?: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
+=======
+export interface Comment {
+  id: string;
+  postId: string;
+  author: UserSummary;
+  content: string;
+  createdAt: string;
+}
+
+export interface CreateCommentRequest {
+  content: string;
+}
+
+export interface FollowResponse {
+  followerId: string;
+  followingId: string;
+  createdAt: string;
+>>>>>>> Stashed changes
 }
