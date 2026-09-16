@@ -33,27 +33,35 @@ export default function CommentList({ postId }: { postId: string }) {
   }
 
   return (
-    <div>
-      {loading && <p>Cargando comentarios...</p>}
+    <div className="flex flex-col gap-3">
+      {loading && <p className="text-sm text-dusk">Cargando comentarios...</p>}
 
       {comments.map((comment) => (
-        <div key={comment.id}>
-          <strong>{comment.author.displayName || comment.author.username}</strong>
-          <p>{comment.content}</p>
+        <div key={comment.id} className="text-sm">
+          <strong className="text-ink">
+            {comment.author.displayName || comment.author.username}
+          </strong>
+          <p className="text-dusk">{comment.content}</p>
         </div>
       ))}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Escribí un comentario..."
           maxLength={500}
           required
+          className="flex-1 rounded-md border border-mist bg-white px-3 py-1.5 text-sm text-ink placeholder:text-dusk/60 focus:border-horizon focus:outline-none"
         />
-        <button type="submit">Comentar</button>
+        <button
+          type="submit"
+          className="rounded-md bg-calm px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-calm/90"
+        >
+          Comentar
+        </button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

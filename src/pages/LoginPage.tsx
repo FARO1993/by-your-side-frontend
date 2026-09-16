@@ -27,27 +27,47 @@ export default function LoginPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>ByYourSide</h1>
-      <input
-        type="text"
-        placeholder="Usuario"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Contraseña"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit">Ingresar</button>
-      <p>
-        ¿No tenés cuenta? <Link to="/register">Registrate</Link>
-      </p>
-    </form>
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+      <div className="w-full max-w-sm">
+        <h1 className="mb-8 text-center font-serif text-3xl font-semibold text-ink">
+          ByYourSide
+        </h1>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="rounded-md border border-mist bg-white px-4 py-2.5 text-ink placeholder:text-dusk/60 focus:border-horizon focus:outline-none"
+          />
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="rounded-md border border-mist bg-white px-4 py-2.5 text-ink placeholder:text-dusk/60 focus:border-horizon focus:outline-none"
+          />
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <button
+            type="submit"
+            className="mt-2 rounded-md bg-horizon px-4 py-2.5 font-medium text-white transition-colors hover:bg-horizon/90"
+          >
+            Ingresar
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-dusk">
+          ¿No tenés cuenta?{' '}
+          <Link to="/register" className="font-medium text-horizon hover:underline">
+            Registrate
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }

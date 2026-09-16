@@ -22,16 +22,22 @@ export default function FollowButton({
         setIsFollowing(true);
       }
     } catch {
-      // Silencioso a proposito: si falla (ej. ya lo segu is, race condition),
-      // no rompemos la UI. El estado real se puede resincronizar en el
-      // proximo refresh del feed.
+      // Silencioso a proposito: ver nota en la version anterior de este archivo.
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <button onClick={handleClick} disabled={submitting}>
+    <button
+      onClick={handleClick}
+      disabled={submitting}
+      className={
+        isFollowing
+          ? 'rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-colors hover:border-dusk disabled:opacity-60'
+          : 'rounded-md bg-horizon px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60'
+      }
+    >
       {isFollowing ? 'Dejar de seguir' : 'Seguir'}
     </button>
   );

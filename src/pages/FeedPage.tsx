@@ -24,15 +24,17 @@ export default function FeedPage() {
 
   return (
     <div>
-      <h1>Hola, {user?.displayName || user?.username} 👋</h1>
+      <h1 className="mb-6 font-serif text-2xl font-semibold text-ink">
+        Hola, {user?.displayName || user?.username} 👋
+      </h1>
 
       <CreatePostForm onCreated={handlePostCreated} />
 
-      {loading && <p>Cargando feed...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {loading && <p className="text-dusk">Cargando feed...</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && posts.length === 0 && (
-        <p>Todavía no hay posts en tu feed. ¡Publicá algo o seguí a alguien!</p>
+        <p className="text-dusk">Todavía no hay posts en tu feed. ¡Publicá algo o seguí a alguien!</p>
       )}
 
       {posts.map((post) => (
