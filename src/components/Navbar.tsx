@@ -5,12 +5,24 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <nav>
-      <Link to="/feed">ByYourSide</Link>
-      <span>
-        {user?.displayName || user?.username}
-        <button onClick={logout}>Cerrar sesión</button>
-      </span>
+    <nav className="border-b border-mist bg-paper">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
+        <Link to="/feed" className="font-serif text-xl font-semibold text-ink">
+          ByYourSide
+        </Link>
+
+        <div className="flex items-center gap-4">
+          <span className="hidden text-sm text-dusk sm:inline">
+            {user?.displayName || user?.username}
+          </span>
+          <button
+            onClick={logout}
+            className="text-sm text-dusk transition-colors hover:text-ink"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
     </nav>
   );
 }
