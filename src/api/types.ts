@@ -37,7 +37,6 @@ export interface ApiErrorResponse {
   fieldErrors?: Record<string, string>;
 }
 
-<<<<<<< Updated upstream
 export interface UserSummary {
   id: string;
   username: string;
@@ -52,6 +51,7 @@ export interface Post {
   visibility: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
   createdAt: string;
   updatedAt: string;
+  followedByCurrentUser: boolean;
 }
 
 // Espejo de Page<T> de Spring Data (lo que devuelve GET /api/posts/feed)
@@ -67,7 +67,8 @@ export interface Page<T> {
 export interface CreatePostRequest {
   content: string;
   visibility?: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
-=======
+}
+
 export interface Comment {
   id: string;
   postId: string;
@@ -84,5 +85,4 @@ export interface FollowResponse {
   followerId: string;
   followingId: string;
   createdAt: string;
->>>>>>> Stashed changes
 }

@@ -13,7 +13,7 @@ export default function PostCard({ post }: { post: Post }) {
     <article>
       <div>
         <strong>{post.author.displayName || post.author.username}</strong>
-        {!isOwnPost && <FollowButton userId={post.author.id} initiallyFollowing={false} />}
+        {!isOwnPost && <FollowButton userId={post.author.id} initiallyFollowing={post.followedByCurrentUser} />}
       </div>
 
       <p>{post.content}</p>
