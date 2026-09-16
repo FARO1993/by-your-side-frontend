@@ -28,18 +28,26 @@ export default function CreatePostForm({ onCreated }: { onCreated: (post: Post) 
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="mb-8 rounded-lg border border-mist bg-white p-4">
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="¿Qué querés compartir hoy?"
         maxLength={2000}
         required
+        rows={3}
+        className="w-full resize-none text-ink placeholder:text-dusk/60 focus:outline-none"
       />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit" disabled={submitting}>
-        {submitting ? 'Publicando...' : 'Publicar'}
-      </button>
+      <div className="flex items-center justify-between">
+        {error ? <p className="text-sm text-red-600">{error}</p> : <span />}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-md bg-horizon px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60"
+        >
+          {submitting ? 'Publicando...' : 'Publicar'}
+        </button>
+      </div>
     </form>
   );
 }
