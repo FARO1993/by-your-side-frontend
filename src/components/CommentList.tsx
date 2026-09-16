@@ -45,7 +45,7 @@ export default function CommentList({ postId }: { postId: string }) {
         </div>
       ))}
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
         <input
           value={content}
           onChange={(e) => setContent(e.target.value)}
