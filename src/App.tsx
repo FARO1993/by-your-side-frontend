@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
 import ProfilePage from './pages/ProfilePage';
 import DiscoverPage from './pages/DiscoverPage';
+import HelpResourcesPage from './pages/HelpResourcesPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/help" element={<HelpResourcesPage />} />
 
           <Route
             element={

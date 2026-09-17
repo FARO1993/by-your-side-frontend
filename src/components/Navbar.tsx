@@ -12,6 +12,9 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link to="/help" className="text-sm font-medium text-calm hover:text-calm/80">
+            Ayuda
+          </Link>
           <Link to="/discover" className="text-sm text-dusk transition-colors hover:text-ink">
             Descubrir
           </Link>
