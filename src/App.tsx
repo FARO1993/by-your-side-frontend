@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             }
           >
             <Route path="/feed" element={<FeedPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/feed" replace />} />
