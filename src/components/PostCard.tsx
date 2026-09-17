@@ -4,6 +4,7 @@ import type { Post } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import CommentList from './CommentList';
 import FollowButton from './FollowButton';
+import SupportButton from './SupportButton';
 
 export default function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
@@ -23,7 +24,12 @@ export default function PostCard({ post }: { post: Post }) {
 
       <p className="mt-2 whitespace-pre-wrap text-ink">{post.content}</p>
 
-      <div className="mt-3 flex items-center gap-3 text-sm text-dusk">
+      <div className="mt-3 flex items-center gap-4 text-sm text-dusk">
+        <SupportButton
+          postId={post.id}
+          initialSupported={post.supportedByCurrentUser}
+          initialCount={post.supportCount}
+        />
         <time>{new Date(post.createdAt).toLocaleString()}</time>
         <button
           onClick={() => setShowComments((prev) => !prev)}
