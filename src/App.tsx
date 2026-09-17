@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
 import ProfilePage from './pages/ProfilePage';
+import DiscoverPage from './pages/DiscoverPage';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           >
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/discover" element={<DiscoverPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/feed" replace />} />

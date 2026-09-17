@@ -12,3 +12,10 @@ export async function getUserPosts(userId: string, page = 0, size = 20): Promise
   });
   return response.data;
 }
+
+export async function discoverUsers(page = 0, size = 20): Promise<Page<DiscoverUser>> {
+  const response = await apiClient.get<Page<DiscoverUser>>('/api/users/discover', {
+    params: { page, size },
+  });
+  return response.data;
+}

@@ -12,6 +12,9 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link to="/discover" className="text-sm text-dusk transition-colors hover:text-ink">
+            Descubrir
+          </Link>
           <span className="hidden text-sm text-dusk sm:inline">
             {user?.displayName || user?.username}
           </span>
