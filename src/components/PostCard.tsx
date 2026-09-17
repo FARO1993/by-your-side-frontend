@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Post } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import CommentList from './CommentList';
@@ -12,7 +13,9 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <article className="mb-4 border-l-2 border-horizon bg-white p-4">
       <div className="flex items-center justify-between">
-        <strong className="text-ink">{post.author.displayName || post.author.username}</strong>
+        <Link to={`/profile/${post.author.id}`} className="font-medium text-ink hover:text-horizon">
+          {post.author.displayName || post.author.username}
+        </Link>
         {!isOwnPost && (
           <FollowButton userId={post.author.id} initiallyFollowing={post.followedByCurrentUser} />
         )}
