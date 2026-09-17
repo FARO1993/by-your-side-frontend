@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import type { ApiErrorResponse } from '../api/types';
+import LogoFull from '../components/LogoFull';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -29,9 +30,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-8 text-center font-serif text-3xl font-semibold text-ink">
-          ByYourSide
-        </h1>
+        <div className="mb-8 flex justify-center">
+          <LogoFull />
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
