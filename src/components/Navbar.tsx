@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell';
+import Avatar from './Avatar';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -22,9 +23,16 @@ export default function Navbar() {
           <Link to="/discover" className="text-sm text-dusk transition-colors hover:text-ink">
             Descubrir
           </Link>
-          <span className="hidden text-sm text-dusk sm:inline">
-            {user?.displayName || user?.username}
-          </span>
+
+          {user && (
+            <Link to={`/profile/${user.id}`} className="flex items-center gap-2">
+              <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.username} size="sm" />
+              <span className="hidden text-sm text-dusk hover:text-ink sm:inline">
+                {user.displayName || user.username}
+              </span>
+            </Link>
+          )}
+
           <button onClick={logout} className="text-sm text-dusk transition-colors hover:text-ink">
             Cerrar sesión
           </button>
