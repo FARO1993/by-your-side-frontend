@@ -8,6 +8,7 @@ const messageByType: Record<Notification['type'], string> = {
   NEW_FOLLOWER: 'empezó a seguirte',
   NEW_COMMENT: 'comentó tu post',
   NEW_SUPPORT: 'te envió apoyo',
+  NEW_STATUS_REACTION: 'reaccionó a tu estado',
 };
 
 export default function NotificationBell() {
