@@ -52,6 +52,8 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
   followedByCurrentUser: boolean;
+  supportCount: number;
+  supportedByCurrentUser: boolean;
 }
 
 // Espejo de Page<T> de Spring Data (lo que devuelve GET /api/posts/feed)
@@ -105,4 +107,10 @@ export interface DiscoverUser {
   displayName: string | null;
   bio: string | null;
   avatarUrl: string | null;
+}
+
+export interface SupportSummary {
+  postId: string;
+  supportCount: number;
+  supportedByCurrentUser: boolean;
 }
