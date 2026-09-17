@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import CommentList from './CommentList';
 import FollowButton from './FollowButton';
 import SupportButton from './SupportButton';
+import Avatar from './Avatar';
 
 export default function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
@@ -14,8 +15,11 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <article className="mb-4 border-l-2 border-horizon bg-white p-4">
       <div className="flex items-center justify-between">
-        <Link to={`/profile/${post.author.id}`} className="font-medium text-ink hover:text-horizon">
-          {post.author.displayName || post.author.username}
+        <Link to={`/profile/${post.author.id}`} className="flex items-center gap-2">
+          <Avatar avatarUrl={post.author.avatarUrl} name={post.author.displayName || post.author.username} size="sm" />
+          <span className="font-medium text-ink hover:text-horizon">
+            {post.author.displayName || post.author.username}
+          </span>
         </Link>
         {!isOwnPost && (
           <FollowButton userId={post.author.id} initiallyFollowing={post.followedByCurrentUser} />
