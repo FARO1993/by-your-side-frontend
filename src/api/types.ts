@@ -86,3 +86,23 @@ export interface FollowResponse {
   followingId: string;
   createdAt: string;
 }
+
+export interface PublicUserProfile {
+  id: string;
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  followersCount: number;
+  followingCount: number;
+  followedByCurrentUser: boolean;
+}
+
+export interface DiscoverUser {
+  id: string;
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+}
