@@ -114,3 +114,12 @@ export interface SupportSummary {
   supportCount: number;
   supportedByCurrentUser: boolean;
 }
+
+export interface Notification {
+  id: string;
+  actor: UserSummary;
+  type: 'NEW_FOLLOWER' | 'NEW_COMMENT' | 'NEW_SUPPORT';
+  postId: string | null;
+  read: boolean;
+  createdAt: string;
+}
