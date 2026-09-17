@@ -118,8 +118,21 @@ export interface SupportSummary {
 export interface Notification {
   id: string;
   actor: UserSummary;
-  type: 'NEW_FOLLOWER' | 'NEW_COMMENT' | 'NEW_SUPPORT';
+  type: 'NEW_FOLLOWER' | 'NEW_COMMENT' | 'NEW_SUPPORT'| 'NEW_STATUS_REACTION';
   postId: string | null;
   read: boolean;
   createdAt: string;
+}
+
+export type StatusMood = 'WELL' | 'NEED_DISTRACTION' | 'DIFFICULT_DAY' | 'NEED_TO_TALK' | 'HERE_FOR_SOMEONE';
+export type StatusReactionType = 'WITH_YOU' | 'WANT_TO_TALK' | 'HERE_READING' | 'NOT_ALONE';
+
+export interface Status {
+  id: string;
+  user: UserSummary;
+  mood: StatusMood;
+  createdAt: string;
+  expiresAt: string;
+  reactionCount: number;
+  reactedByCurrentUser: StatusReactionType | null;
 }
