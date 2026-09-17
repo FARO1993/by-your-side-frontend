@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { login as loginRequest, register as registerRequest, getCurrentUser } from '../api/auth';
+import { connectSocket, disconnectSocket } from '../api/socket';
 import type { User, LoginCredentials, RegisterData } from '../api/types';
 
 interface AuthContextValue {
@@ -24,7 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     getCurrentUser()
-      .then(setUser)
+      .then((currentUser) => {
+        setUser(currentUser);
+        connectSocket(token);
+      })
       .catch(() => localStorage.removeItem('token'))
       .finally(() => setLoading(false));
   }, []);
@@ -34,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', token);
     const currentUser = await getCurrentUser();
     setUser(currentUser);
+    connectSocket(token);
   }
 
   async function register(data: RegisterData): Promise<void> {
@@ -41,10 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', token);
     const currentUser = await getCurrentUser();
     setUser(currentUser);
+    connectSocket(token);
   }
 
   function logout(): void {
     localStorage.removeItem('token');
+    disconnectSocket();
     setUser(null);
   }
 

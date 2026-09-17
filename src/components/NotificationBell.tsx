@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getNotifications, getUnreadCount, markAllAsRead } from '../api/notifications';
+import { subscribeToUserQueue } from '../api/socket';
 import type { Notification } from '../api/types';
 
 const messageByType: Record<Notification['type'], string> = {
@@ -17,6 +18,16 @@ export default function NotificationBell() {
 
   useEffect(() => {
     getUnreadCount().then(setUnreadCount).catch(() => {});
+
+    // /user/queue/notifications es el destino privado que Spring resuelve
+    // automaticamente por sesion (ver setUserDestinationPrefix en el backend)
+    // -- no hace falta saber el propio username acá.
+    const unsubscribe = subscribeToUserQueue<Notification>('/user/queue/notifications', (notification) => {
+      setUnreadCount((prev) => prev + 1);
+      setNotifications((prev) => [notification, ...prev]);
+    });
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
