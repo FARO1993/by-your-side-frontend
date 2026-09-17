@@ -67,6 +67,12 @@ export default function LoginPage() {
             Registrate
           </Link>
         </p>
+
+        <p className="mt-3 text-center text-sm text-dusk">
+          <Link to="/help" className="font-medium text-calm hover:underline">
+            ¿Necesitás ayuda ahora?
+          </Link>
+        </p>
       </div>
     </div>
   );
