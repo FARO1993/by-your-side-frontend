@@ -22,3 +22,8 @@ export async function removeSupport(postId: string): Promise<SupportSummary> {
   const response = await apiClient.delete<SupportSummary>(`/api/posts/${postId}/support`);
   return response.data;
 }
+
+export async function getPost(postId: string): Promise<Post> {
+  const response = await apiClient.get<Post>(`/api/posts/${postId}`);
+  return response.data;
+}

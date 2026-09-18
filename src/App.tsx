@@ -10,6 +10,7 @@ import DiscoverPage from './pages/DiscoverPage';
 import HelpResourcesPage from './pages/HelpResourcesPage';
 import ConversationsPage from './pages/ConversationsPage';
 import ChatPage from './pages/ChatPage';
+import PostPage from './pages/PostPage';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/messages" element={<ConversationsPage />} />
             <Route path="/messages/:conversationId" element={<ChatPage />} />
+            <Route path="/posts/:postId" element={<PostPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/feed" replace />} />
