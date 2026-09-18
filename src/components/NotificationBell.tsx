@@ -75,7 +75,7 @@ export default function NotificationBell() {
             notifications.map((n) => (
               <Link
                 key={n.id}
-                to={n.postId ? `/feed` : `/profile/${n.actor.id}`}
+                to={n.postId ? `/posts/${n.postId}` : `/profile/${n.actor.id}`}
                 onClick={() => setOpen(false)}
                 className="block rounded-md p-2 text-sm hover:bg-paper"
               >
