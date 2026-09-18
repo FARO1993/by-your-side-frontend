@@ -7,6 +7,7 @@ import CreatePostForm from '../components/CreatePostForm';
 import StatusPicker from '../components/StatusPicker';
 import StatusCard from '../components/StatusCard';
 import { useAuth } from '../context/AuthContext';
+import SupportReminderCard from '../components/SupportReminderCard';
 
 export default function FeedPage() {
   const { user } = useAuth();
@@ -40,9 +41,10 @@ export default function FeedPage() {
       <h1 className="mb-6 font-serif text-2xl font-semibold text-ink">
         Hola, {user?.displayName || user?.username} 👋
       </h1>
-
+  
+      <SupportReminderCard />
       <StatusPicker onSet={handleStatusSet} />
-
+  
       {statuses.length > 0 && (
         <div className="mb-6">
           {statuses.map((status) => (
@@ -50,16 +52,16 @@ export default function FeedPage() {
           ))}
         </div>
       )}
-
+  
       <CreatePostForm onCreated={handlePostCreated} />
-
+  
       {loading && <p className="text-dusk">Cargando feed...</p>}
       {error && <p className="text-red-600">{error}</p>}
-
+  
       {!loading && !error && posts.length === 0 && (
         <p className="text-dusk">Todavía no hay posts en tu feed. ¡Publicá algo o seguí a alguien!</p>
       )}
-
+  
       {posts.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}
