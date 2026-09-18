@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getNotifications, getUnreadCount, markAllAsRead } from '../api/notifications';
 import { subscribeToUserQueue } from '../api/socket';
 import type { Notification } from '../api/types';
+import { BellIcon } from './Icons';
 
 const messageByType: Record<Notification['type'], string> = {
   NEW_FOLLOWER: 'empezó a seguirte',
@@ -59,7 +60,7 @@ export default function NotificationBell() {
   return (
     <div ref={containerRef} className="relative">
       <button onClick={handleToggle} className="relative text-dusk transition-colors hover:text-ink">
-        <span className="text-lg">🔔</span>
+      <BellIcon className="h-5 w-5" />
         {unreadCount > 0 && (
           <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-calm text-[10px] font-medium text-white">
             {unreadCount > 9 ? '9+' : unreadCount}

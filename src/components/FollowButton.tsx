@@ -22,7 +22,7 @@ export default function FollowButton({
         setIsFollowing(true);
       }
     } catch {
-      // Silencioso a proposito: ver nota en la version anterior de este archivo.
+      // Silencioso a proposito.
     } finally {
       setSubmitting(false);
     }
@@ -34,8 +34,8 @@ export default function FollowButton({
       disabled={submitting}
       className={
         isFollowing
-          ? 'rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-colors hover:border-dusk disabled:opacity-60'
-          : 'rounded-md bg-horizon px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60'
+          ? 'rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-all duration-150 hover:border-dusk active:scale-95 disabled:opacity-60'
+          : 'rounded-md bg-horizon px-3 py-1 text-sm font-medium text-white transition-all duration-150 hover:bg-horizon/90 active:scale-95 disabled:opacity-60'
       }
     >
       {isFollowing ? 'Dejar de seguir' : 'Seguir'}

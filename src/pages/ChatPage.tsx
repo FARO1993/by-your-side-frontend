@@ -4,19 +4,20 @@ import { getMessages, sendMessage, getConversations } from '../api/chat';
 import { subscribeToUserQueue } from '../api/socket';
 import type { Message, Conversation } from '../api/types';
 import { useAuth } from '../context/AuthContext';
-import Avatar from '../components/Avatar';
 import { useChatNotifications } from '../context/ChatNotificationsContext';
+import Avatar from '../components/Avatar';
+import { ArrowLeftIcon } from '../components/Icons';
 
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
+  const { refreshUnreadCount } = useChatNotifications();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<Conversation['otherUser'] | null>(null);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { refreshUnreadCount } = useChatNotifications();
 
   useEffect(() => {
     if (!conversationId) return;
@@ -63,7 +64,7 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <div className="mb-4 flex items-center gap-2 border-b border-mist pb-3">
         <button onClick={() => navigate('/messages')} className="text-dusk hover:text-ink">
-          ←
+          <ArrowLeftIcon className="h-5 w-5" />
         </button>
         {otherUser && (
           <>
@@ -81,7 +82,7 @@ export default function ChatPage() {
         {messages.map((message) => {
           const isOwnMessage = message.sender.id === user?.id;
           return (
-            <div key={message.id} className={`mb-2 flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+            <div key={message.id} className={`mb-2 flex animate-fade-slide-in ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={
                   isOwnMessage
@@ -107,7 +108,7 @@ export default function ChatPage() {
         />
         <button
           type="submit"
-          className="rounded-md bg-horizon px-4 py-2 text-sm font-medium text-white hover:bg-horizon/90"
+          className="rounded-md bg-horizon px-4 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-horizon/90 active:scale-95"
         >
           Enviar
         </button>

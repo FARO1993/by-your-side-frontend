@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { addSupport, removeSupport } from '../api/posts';
+import { HeartIcon } from './Icons';
 
 export default function SupportButton({
   postId,
@@ -21,8 +22,7 @@ export default function SupportButton({
       setSupported(summary.supportedByCurrentUser);
       setCount(summary.supportCount);
     } catch {
-      // Silencioso a proposito, mismo criterio que FollowButton: no
-      // interrumpimos la lectura del post por un fallo de red puntual.
+      // Silencioso a proposito.
     } finally {
       setSubmitting(false);
     }
@@ -34,11 +34,11 @@ export default function SupportButton({
       disabled={submitting}
       className={
         supported
-          ? 'flex items-center gap-1.5 text-sm font-medium text-horizon'
-          : 'flex items-center gap-1.5 text-sm font-medium text-dusk transition-colors hover:text-horizon'
+          ? 'flex items-center gap-1.5 text-sm font-medium text-horizon transition-transform active:scale-90'
+          : 'flex items-center gap-1.5 text-sm font-medium text-dusk transition-all duration-150 hover:text-horizon active:scale-90'
       }
     >
-      <span>{supported ? '💛' : '🤍'}</span>
+      <HeartIcon filled={supported} className="h-4 w-4" />
       <span className="whitespace-nowrap">
         {count === 0
           ? 'Enviar apoyo'
