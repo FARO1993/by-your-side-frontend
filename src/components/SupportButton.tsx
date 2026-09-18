@@ -39,7 +39,7 @@ export default function SupportButton({
       }
     >
       <span>{supported ? '💛' : '🤍'}</span>
-      <span>
+      <span className="whitespace-nowrap">
         {count === 0
           ? 'Enviar apoyo'
           : count === 1
