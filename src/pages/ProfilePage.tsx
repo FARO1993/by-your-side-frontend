@@ -69,11 +69,13 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <div className="mb-6 border-b border-mist pb-6">
-        <div className="flex items-center justify-between">
+            <div className="mb-6 border-b border-mist pb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar avatarUrl={profile.avatarUrl} name={profile.displayName || profile.username} size="lg" />
+              <div className="rounded-full ring-2 ring-horizon/30 ring-offset-2 ring-offset-paper">
+                <Avatar avatarUrl={profile.avatarUrl} name={profile.displayName || profile.username} size="lg" />
+              </div>
               {isOwnProfile && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -100,21 +102,21 @@ export default function ProfilePage() {
               <p className="text-sm text-dusk">@{profile.username}</p>
             </div>
           </div>
-          
+
           {!isOwnProfile && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleMessage}
-              className="rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-colors hover:border-horizon"
-            >
-              Mensaje
-            </button>
-            <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
-          </div>
-)}
+            <div className="flex gap-2 sm:flex-shrink-0">
+              <button
+                onClick={handleMessage}
+                className="flex-1 rounded-md border border-mist px-3 py-1.5 text-sm font-medium text-dusk transition-colors hover:border-horizon sm:flex-initial"
+              >
+                Mensaje
+              </button>
+              <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
+            </div>
+          )}
         </div>
 
-        {profile.bio && <p className="mt-3 text-ink">{profile.bio}</p>}
+        {profile.bio && <p className="mt-4 text-ink">{profile.bio}</p>}
 
         <div className="mt-3 flex gap-4 text-sm text-dusk">
           <span>
