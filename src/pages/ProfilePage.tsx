@@ -6,6 +6,8 @@ import PostCard from '../components/PostCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { getOrCreateConversation } from '../api/chat';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -16,6 +18,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) return;
@@ -46,6 +49,13 @@ export default function ProfilePage() {
       setUploading(false);
     }
   }
+
+  async function handleMessage() {
+      if (!profile) return;
+      const conversation = await getOrCreateConversation(profile.id);
+      navigate(`/messages/${conversation.id}`);
+  }
+
 
   if (loading) {
     return <p className="text-dusk">Cargando perfil...</p>;
@@ -90,10 +100,18 @@ export default function ProfilePage() {
               <p className="text-sm text-dusk">@{profile.username}</p>
             </div>
           </div>
-
+          
           {!isOwnProfile && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleMessage}
+              className="rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-colors hover:border-horizon"
+            >
+              Mensaje
+            </button>
             <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
-          )}
+          </div>
+)}
         </div>
 
         {profile.bio && <p className="mt-3 text-ink">{profile.bio}</p>}

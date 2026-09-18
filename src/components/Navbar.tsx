@@ -3,9 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell';
 import Avatar from './Avatar';
+import { useChatNotifications } from '../context/ChatNotificationsContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { unreadCount } = useChatNotifications();
 
   return (
     <nav className="border-b border-mist bg-paper">
@@ -22,6 +24,14 @@ export default function Navbar() {
           </Link>
           <Link to="/discover" className="text-sm text-dusk transition-colors hover:text-ink">
             Descubrir
+          </Link>
+          <Link to="/messages" className="relative text-sm text-dusk transition-colors hover:text-ink">
+            Mensajes
+            {unreadCount > 0 && (
+              <span className="absolute -right-3 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-calm text-[10px] font-medium text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           {user && (

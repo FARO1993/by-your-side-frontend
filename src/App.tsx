@@ -8,6 +8,8 @@ import FeedPage from './pages/FeedPage';
 import ProfilePage from './pages/ProfilePage';
 import DiscoverPage from './pages/DiscoverPage';
 import HelpResourcesPage from './pages/HelpResourcesPage';
+import ConversationsPage from './pages/ConversationsPage';
+import ChatPage from './pages/ChatPage';
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/messages" element={<ConversationsPage />} />
+            <Route path="/messages/:conversationId" element={<ChatPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/feed" replace />} />
