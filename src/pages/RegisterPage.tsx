@@ -12,6 +12,7 @@ export default function RegisterPage() {
     displayName: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSubmitting(true);
     try {
       await register(form);
       navigate('/feed');
@@ -31,11 +33,13 @@ export default function RegisterPage() {
       } else {
         setError('Error al registrarse');
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
   const inputClass =
-    'rounded-md border border-mist bg-white px-4 py-2.5 text-ink placeholder:text-dusk/60 focus:border-horizon focus:outline-none';
+    'rounded-md border border-mist bg-white px-4 py-2.5 text-ink placeholder:text-dusk/60 focus:border-horizon focus:outline-none disabled:opacity-60';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
@@ -45,18 +49,22 @@ export default function RegisterPage() {
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input name="username" placeholder="Usuario" onChange={handleChange} required className={inputClass} />
-          <input name="email" type="email" placeholder="Email" onChange={handleChange} required className={inputClass} />
-          <input name="displayName" placeholder="Nombre" onChange={handleChange} className={inputClass} />
-          <input name="password" type="password" placeholder="Contraseña" onChange={handleChange} required className={inputClass} />
+          <input name="username" placeholder="Usuario" onChange={handleChange} required disabled={submitting} className={inputClass} />
+          <input name="email" type="email" placeholder="Email" onChange={handleChange} required disabled={submitting} className={inputClass} />
+          <input name="displayName" placeholder="Nombre" onChange={handleChange} disabled={submitting} className={inputClass} />
+          <input name="password" type="password" placeholder="Contraseña" onChange={handleChange} required disabled={submitting} className={inputClass} />
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
             type="submit"
-            className="mt-2 rounded-md bg-horizon px-4 py-2.5 font-medium text-white transition-colors hover:bg-horizon/90"
+            disabled={submitting}
+            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-horizon px-4 py-2.5 font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60"
           >
-            Registrarme
+            {submitting && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            )}
+            {submitting ? 'Creando cuenta...' : 'Registrarme'}
           </button>
         </form>
 
@@ -64,12 +72,6 @@ export default function RegisterPage() {
           ¿Ya tenés cuenta?{' '}
           <Link to="/login" className="font-medium text-horizon hover:underline">
             Ingresá
-          </Link>
-        </p>
-
-        <p className="mt-3 text-center text-sm text-dusk">
-          <Link to="/help" className="font-medium text-calm hover:underline">
-            ¿Necesitás ayuda ahora?
           </Link>
         </p>
       </div>
