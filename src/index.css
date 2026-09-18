@@ -45,3 +45,37 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+@keyframes aurora-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.08);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@utility animate-fade-slide-in {
+  animation: fade-slide-in 0.25s ease-out;
+}
+
+@utility animate-aurora-a {
+  animation: aurora-drift 75s ease-in-out infinite;
+}
+
+@utility animate-aurora-b {
+  animation: aurora-drift 95s ease-in-out infinite reverse;
+}
+
+@utility animate-breathe {
+  animation: breathe 5s ease-in-out infinite;
+}

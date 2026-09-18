@@ -21,9 +21,6 @@ export default function NotificationBell() {
   useEffect(() => {
     getUnreadCount().then(setUnreadCount).catch(() => {});
 
-    // /user/queue/notifications es el destino privado que Spring resuelve
-    // automaticamente por sesion (ver setUserDestinationPrefix en el backend)
-    // -- no hace falta saber el propio username acá.
     const unsubscribe = subscribeToUserQueue<Notification>('/user/queue/notifications', (notification) => {
       setUnreadCount((prev) => prev + 1);
       setNotifications((prev) => [notification, ...prev]);
@@ -59,17 +56,20 @@ export default function NotificationBell() {
 
   return (
     <div ref={containerRef} className="relative">
-      <button onClick={handleToggle} className="relative text-dusk transition-colors hover:text-ink">
-      <BellIcon className="h-5 w-5" />
+      <button
+        onClick={handleToggle}
+        className="relative flex h-10 w-10 items-center justify-center rounded-full text-dusk transition-colors hover:bg-mist hover:text-ink"
+      >
+        <BellIcon className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-calm text-[10px] font-medium text-white">
+          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-calm text-[10px] font-medium text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-8 z-10 w-72 border border-mist bg-white p-2 shadow-sm">
+        <div className="absolute right-0 top-11 z-10 w-72 animate-fade-slide-in border border-mist bg-white p-2 shadow-sm">
           {notifications.length === 0 ? (
             <p className="p-3 text-sm text-dusk">No tenés notificaciones todavía.</p>
           ) : (
