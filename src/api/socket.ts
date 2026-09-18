@@ -12,7 +12,9 @@ export function connectSocket(token: string): Client {
     connectHeaders: {
       Authorization: `Bearer ${token}`,
     },
-    reconnectDelay: 5000, // reintenta cada 5s si se cae la conexion
+    reconnectDelay: 5000,
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
   });
 
   client.activate();
@@ -25,30 +27,51 @@ export function disconnectSocket(): void {
 }
 
 export function subscribeToUserQueue<T>(destination: string, onMessage: (payload: T) => void): () => void {
-  if (!client) {
-    throw new Error('Socket not connected. Call connectSocket first.');
-  }
-
-  // stompjs resuelve la suscripcion apenas la conexion este activa; si ya
-  // esta conectado, se suscribe al toque, si no, espera al evento onConnect.
   let subscriptionId: string | undefined;
+  let cancelled = false;
 
-  const trySubscribe = () => {
-    const subscription = client!.subscribe(destination, (message: IMessage) => {
-      onMessage(JSON.parse(message.body) as T);
-    });
-    subscriptionId = subscription.id;
-  };
+  function trySubscribe() {
+    if (cancelled || !client) return;
 
-  if (client.connected) {
-    trySubscribe();
-  } else {
-    client.onConnect = trySubscribe;
+    if (client.connected) {
+      const subscription = client.subscribe(destination, (message: IMessage) => {
+        onMessage(JSON.parse(message.body) as T);
+      });
+      subscriptionId = subscription.id;
+    } else {
+      // El cliente todavia no termino de conectar (o ni siquiera se
+      // llamo a connectSocket todavia) -- reintenta cuando conecte,
+      // en vez de tirar error y dejar la suscripcion perdida.
+      const originalOnConnect = client.onConnect;
+      client.onConnect = (frame) => {
+        originalOnConnect?.(frame);
+        trySubscribe();
+      };
+    }
   }
+
+  // Si connectSocket todavia no corrio (client es null), reintenta con
+  // un pequeño polling hasta que exista -- cubre el caso de un
+  // componente montando antes que AuthContext termine de conectar.
+  if (!client) {
+    const interval = setInterval(() => {
+      if (client) {
+        clearInterval(interval);
+        trySubscribe();
+      }
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (subscriptionId) client?.unsubscribe(subscriptionId);
+    };
+  }
+
+  trySubscribe();
 
   return () => {
-    if (subscriptionId) {
-      client?.unsubscribe(subscriptionId);
-    }
+    cancelled = true;
+    if (subscriptionId) client?.unsubscribe(subscriptionId);
   };
 }
