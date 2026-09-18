@@ -136,3 +136,20 @@ export interface Status {
   reactionCount: number;
   reactedByCurrentUser: StatusReactionType | null;
 }
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  sender: UserSummary;
+  content: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  otherUser: UserSummary;
+  lastMessageContent: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+}
