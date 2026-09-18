@@ -28,7 +28,7 @@ export default function PostCard({ post }: { post: Post }) {
 
       <p className="mt-2 whitespace-pre-wrap text-ink">{post.content}</p>
 
-      <div className="mt-3 flex items-center gap-4 text-sm text-dusk">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-dusk">
         <SupportButton
           postId={post.id}
           initialSupported={post.supportedByCurrentUser}
