@@ -5,6 +5,7 @@ import { useChatNotifications } from '../context/ChatNotificationsContext';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell';
 import Avatar from './Avatar';
+import { MenuIcon, CloseIcon } from './Icons';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -59,16 +60,16 @@ export default function Navbar() {
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Abrir menú"
-            className="text-2xl text-ink"
+            className="text-ink transition-transform active:scale-90"
           >
-            {menuOpen ? '✕' : '☰'}
+            {menuOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
         </div>
       </div>
 
       {/* Panel mobile: links apilados */}
       {menuOpen && (
-        <div className="flex flex-col gap-3 border-t border-mist px-4 py-4 sm:hidden">
+        <div className="flex animate-fade-slide-in flex-col gap-3 border-t border-mist px-4 py-4 sm:hidden">
           {user && (
             <Link to={`/profile/${user.id}`} onClick={closeMenu} className="flex items-center gap-2">
               <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.username} size="sm" />

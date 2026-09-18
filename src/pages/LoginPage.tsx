@@ -62,7 +62,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-horizon px-4 py-2.5 font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60"
+            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-horizon px-4 py-2.5 font-medium text-white transition-all duration-150 hover:bg-horizon/90 active:scale-95 disabled:opacity-60"
           >
             {submitting && (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
