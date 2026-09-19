@@ -17,7 +17,7 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<Conversation['otherUser'] | null>(null);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -43,7 +43,10 @@ export default function ChatPage() {
   }, [conversationId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -57,12 +60,16 @@ export default function ChatPage() {
   }
 
   if (loading) {
-    return <p className="text-dusk">Cargando conversación...</p>;
+    return (
+      <div className="flex h-full min-h-0 flex-1 items-center justify-center">
+        <p className="text-dusk">Cargando conversación...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <div className="mb-4 flex items-center gap-2 border-b border-mist pb-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="mb-4 flex flex-shrink-0 items-center gap-2 border-b border-mist pb-3">
         <button onClick={() => navigate('/messages')} className="text-dusk hover:text-ink">
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
@@ -78,7 +85,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto">
         {messages.map((message) => {
           const isOwnMessage = message.sender.id === user?.id;
           return (
@@ -95,10 +102,9 @@ export default function ChatPage() {
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
+      <form onSubmit={handleSubmit} className="mt-3 flex flex-shrink-0 gap-2">
         <input
           value={content}
           onChange={(e) => setContent(e.target.value)}
