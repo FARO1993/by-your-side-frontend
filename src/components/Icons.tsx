@@ -188,3 +188,62 @@ export function HelpIcon({ className = 'h-5 w-5' }: IconProps) {
       </svg>
     );
   }
+
+  export function ChatIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <path d="M4 5h16v10H9l-3 3v-3H4V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  
+  export function GameIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <rect x="3" y="8" width="18" height="9" rx="3" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M7 11v3M5.5 12.5h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="16" cy="11.5" r="0.9" fill="currentColor" />
+        <circle cx="18" cy="13.5" r="0.9" fill="currentColor" />
+      </svg>
+    );
+  }
+  
+  export function FilmIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M8 5v14M16 5v14M3 10h5M16 10h5M3 15h5M16 15h5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  
+  export function MusicIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <path d="M9 18V5l11-2v13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="6.5" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="17.5" cy="16" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    );
+  }
+  
+  export function LaughIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M8 13c1 2 2.5 3 4 3s3-1 4-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="9" cy="9.5" r="1" fill="currentColor" />
+        <circle cx="15" cy="9.5" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+  
+  export function UsersIcon({ className = 'h-5 w-5' }: IconProps) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className}>
+        <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M16 8a3 3 0 010 6M19 20a5.5 5.5 0 00-3.5-5.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    );
+  }

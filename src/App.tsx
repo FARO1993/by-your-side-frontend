@@ -11,6 +11,7 @@ import HelpResourcesPage from './pages/HelpResourcesPage';
 import ConversationsPage from './pages/ConversationsPage';
 import ChatPage from './pages/ChatPage';
 import PostPage from './pages/PostPage';
+import CompanionModePage from './pages/CompanionModePage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/messages" element={<ConversationsPage />} />
             <Route path="/messages/:conversationId" element={<ChatPage />} />
             <Route path="/posts/:postId" element={<PostPage />} />
+            <Route path="/companion" element={<CompanionModePage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/feed" replace />} />
