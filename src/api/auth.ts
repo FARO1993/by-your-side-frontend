@@ -2,6 +2,7 @@ import apiClient from './client';
 import type { AuthResponse, LoginCredentials, RegisterData, User } from './types';
 
 export async function register(data: RegisterData): Promise<AuthResponse> {
+  debugger;
   const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
   return response.data;
 }

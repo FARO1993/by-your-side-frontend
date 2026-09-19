@@ -102,12 +102,14 @@ export function AppShell({
         </main>
       )}
 
-      <MobileTabBar
-        active={active}
-        onNavigate={onNavigate}
-        unread={unread}
-        authenticated={authenticated}
-      />
+      {!bare && (
+        <MobileTabBar
+          active={active}
+          onNavigate={onNavigate}
+          unread={unread}
+          authenticated={authenticated}
+        />
+      )}
     </div>
   );
 }

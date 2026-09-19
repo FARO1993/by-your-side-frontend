@@ -4,7 +4,6 @@ import { Lock, Mail } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import type { ApiErrorResponse } from '../api/types';
-import { requestPasswordReset } from '../mocks/auth';
 import { Button, PresenceGlyph, TextField } from '../components/byourside/ui';
 import { Logo } from '../components/byourside/logo';
 
@@ -18,7 +17,8 @@ function WelcomePanel() {
         </div>
         <h2 className="font-serif text-3xl text-pretty">No tenés que atravesarlo solo.</h2>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-foreground/80">
-          Un espacio para estar al lado, sin apuro y sin tener que explicarlo todo.
+          ByYourSide es un lugar tranquilo para compartir cómo estás y encontrar a alguien que te
+          acompañe. Sin apuros, sin juicios. Solo presencia.
         </p>
       </div>
       <div className="flex gap-6 text-sm">
@@ -34,11 +34,10 @@ function WelcomePanel() {
 }
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [forgot, setForgot] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -47,7 +46,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login({ username, password });
+      await login({ email, password });
       navigate('/feed');
     } catch (err) {
       if (axios.isAxiosError<ApiErrorResponse>(err)) {
@@ -70,20 +69,23 @@ export default function LoginPage() {
               <Logo wordmark />
             </div>
             <h1 className="font-serif text-2xl sm:text-3xl">Qué bueno verte de nuevo</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Entrá cuando quieras. Te esperamos acá.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ingresá para reencontrarte con quienes te acompañan.
+            </p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <TextField
-                label="Usuario"
-                placeholder="Usuario"
+                label="Correo electrónico"
+                type="email"
+                placeholder="vos@ejemplo.com"
                 icon={<Mail className="size-4" />}
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 required
                 disabled={submitting}
               />
               <TextField
                 label="Contraseña"
-                placeholder="Contraseña"
+                placeholder="Tu contraseña"
                 type="password"
                 icon={<Lock className="size-4" />}
                 value={password}
@@ -92,28 +94,16 @@ export default function LoginPage() {
                 disabled={submitting}
                 error={error ?? undefined}
               />
-              <button
-                type="button"
-                className="text-sm text-listening-strong hover:underline"
-                onClick={async () => {
-                  await requestPasswordReset(username);
-                  setForgot(true);
-                }}
-              >
+              <Link to="/help" className="text-sm text-listening-strong hover:underline">
                 ¿Olvidaste tu contraseña?
-              </button>
-              {forgot ? (
-                <p className="text-xs text-muted-foreground">
-                  El servidor todavía no tiene recupero de clave. Esta confirmación es solo visual (mock).
-                </p>
-              ) : null}
+              </Link>
               <Button type="submit" fullWidth loading={submitting}>
                 Ingresar
               </Button>
             </form>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               ¿Todavía no tenés cuenta?{' '}
-              <Link to="/register" className="font-semibold text-foreground">
+              <Link to="/register" className="font-semibold text-presence hover:underline">
                 Unite
               </Link>
             </p>
