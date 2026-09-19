@@ -238,7 +238,28 @@ export function HelpIcon({ className = 'h-5 w-5' }: IconProps) {
     );
   }
   
-  export function UsersIcon({ className = 'h-5 w-5' }: IconProps) {
+  export function HomeIcon({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M4 11.5L12 5l8 6.5V19a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1v-7.5z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function UsersIcon({ className = 'h-5 w-5' }: IconProps) {
     return (
       <svg viewBox="0 0 24 24" fill="none" className={className}>
         <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
