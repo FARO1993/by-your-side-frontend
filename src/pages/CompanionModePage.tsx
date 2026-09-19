@@ -1,176 +1,222 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Ear, Heart, ShieldCheck } from 'lucide-react';
 import {
-  setAvailability,
   cancelAvailability,
   getMyAvailability,
   listAvailable,
+  setAvailability,
 } from '../api/availability';
-import { getOrCreateConversation } from '../api/chat';
+import { getOrCreateConversation, sendMessage } from '../api/chat';
 import type { Availability, CompanionIntent } from '../api/types';
 import Avatar from '../components/Avatar';
-import {
-  ChatIcon,
-  GameIcon,
-  FilmIcon,
-  MusicIcon,
-  LaughIcon,
-  UsersIcon,
-} from '../components/Icons';
+import { Button, Card, EmptyState, SectionTitle, Spinner } from '../components/byourside/ui';
 
-const intents: { value: CompanionIntent; label: string; Icon: typeof ChatIcon }[] = [
-  { value: 'TALK', label: 'Hablar', Icon: ChatIcon },
-  { value: 'DISTRACTION', label: 'Jugar / distraerme', Icon: GameIcon },
-  { value: 'WATCH_TOGETHER', label: 'Ver algo juntos', Icon: FilmIcon },
-  { value: 'MUSIC', label: 'Escuchar música', Icon: MusicIcon },
-  { value: 'LAUGH', label: 'Reírnos un rato', Icon: LaughIcon },
-  { value: 'JUST_COMPANY', label: 'Solo estar acompañado', Icon: UsersIcon },
+const intents: { value: CompanionIntent; label: string }[] = [
+  { value: 'TALK', label: 'Hablar' },
+  { value: 'DISTRACTION', label: 'Jugar / distraerme' },
+  { value: 'WATCH_TOGETHER', label: 'Ver algo juntos' },
+  { value: 'MUSIC', label: 'Escuchar música' },
+  { value: 'LAUGH', label: 'Reírnos un rato' },
+  { value: 'JUST_COMPANY', label: 'Solo estar acompañado' },
 ];
 
 export default function CompanionModePage() {
   const navigate = useNavigate();
-  const [myAvailability, setMyAvailability] = useState<Availability | null>(null);
-  const [selectedIntent, setSelectedIntent] = useState<CompanionIntent | null>(null);
+  const [mine, setMine] = useState<Availability | null>(null);
+  const [selected, setSelected] = useState<CompanionIntent | null>(null);
   const [available, setAvailable] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingList, setLoadingList] = useState(false);
+  const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [sending, setSending] = useState<Record<string, boolean>>({});
+  const [sendError, setSendError] = useState<Record<string, string>>({});
+
+  async function sendWithYou(item: Availability) {
+    setSending((prev) => ({ ...prev, [item.id]: true }));
+    setSendError((prev) => ({ ...prev, [item.id]: '' }));
+    try {
+      const conversation = await getOrCreateConversation(item.user.id);
+      await sendMessage(conversation.id, 'Estoy con vos.');
+      setSent((prev) => ({ ...prev, [item.id]: true }));
+    } catch {
+      setSendError((prev) => ({ ...prev, [item.id]: 'No se pudo enviar. Probá de nuevo.' }));
+    } finally {
+      setSending((prev) => ({ ...prev, [item.id]: false }));
+    }
+  }
 
   useEffect(() => {
-    getMyAvailability()
-      .then(setMyAvailability)
-      .finally(() => setLoading(false));
+    getMyAvailability().then(setMine).finally(() => setLoading(false));
   }, []);
 
-  async function handleActivate(intent: CompanionIntent) {
-    const result = await setAvailability(intent);
-    setMyAvailability(result);
+  async function toggle(intent?: CompanionIntent) {
+    if (mine) {
+      await cancelAvailability();
+      setMine(null);
+      return;
+    }
+    if (intent) setMine(await setAvailability(intent));
   }
 
-  async function handleCancel() {
-    await cancelAvailability();
-    setMyAvailability(null);
-  }
-
-  async function handleSearch(intent: CompanionIntent) {
-    setSelectedIntent(intent);
+  async function search(intent: CompanionIntent) {
+    setSelected(intent);
     setLoadingList(true);
     try {
-      const results = await listAvailable(intent);
-      setAvailable(results);
+      setAvailable(await listAvailable(intent));
     } finally {
       setLoadingList(false);
     }
   }
 
-  async function handleStartChat(userId: string) {
-    const conversation = await getOrCreateConversation(userId);
-    navigate(`/messages/${conversation.id}`);
-  }
-
   if (loading) {
-    return <p className="text-dusk">Cargando...</p>;
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1 className="mb-2 font-serif text-2xl font-semibold text-ink">Modo compañía</h1>
-      <p className="mb-6 text-sm text-dusk">
-        Declarate disponible para acompañar a alguien, o buscá quién está disponible ahora para
-        vos. Las disponibilidades duran 6 horas.
-      </p>
-
-      {/* Tu disponibilidad actual */}
-      <div className="mb-8 border-l-2 border-horizon bg-white p-4">
-        <p className="mb-3 text-sm font-medium text-dusk">
-          {myAvailability ? 'Estás disponible para:' : '¿Estás disponible para acompañar a alguien?'}
+    <div className="space-y-6">
+      <Card className="bg-gradient-to-r from-listening-soft via-card to-presence-soft p-6 sm:p-8">
+        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-card text-listening-strong">
+          <Heart className="size-6" />
+        </div>
+        <h1 className="font-serif text-2xl sm:text-3xl">Modo compañía</h1>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
+          Declarate disponible para acompañar, o buscá quién está disponible ahora. Las
+          disponibilidades duran 6 horas.
         </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {mine ? (
+            <Button variant="outline" onClick={() => toggle()}>
+              Pausar
+            </Button>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              {intents.map((intent) => (
+                <Button key={intent.value} size="sm" variant="listening" onClick={() => toggle(intent.value)}>
+                  Activar · {intent.label}
+                </Button>
+              ))}
+            </div>
+          )}
+          <p className="inline-flex items-center gap-2 text-sm" aria-live="polite">
+            <span className={`size-2 rounded-full ${mine ? 'bg-listening' : 'bg-muted-foreground/40'}`} />
+            {mine ? 'Estás disponible' : 'En pausa'}
+          </p>
+        </div>
+      </Card>
 
-        {myAvailability ? (
-          <div className="flex items-center justify-between">
-            <span className="text-ink">
-              {intents.find((i) => i.value === myAvailability.intent)?.label}
-            </span>
-            <button
-              onClick={handleCancel}
-              className="rounded-md border border-mist px-3 py-1.5 text-sm text-dusk transition-all hover:border-horizon active:scale-95"
-            >
-              Ya no estoy disponible
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {intents.map(({ value, label, Icon }) => (
-              <button
-                key={value}
-                onClick={() => handleActivate(value)}
-                className="flex items-center gap-1.5 rounded-full border border-mist px-3 py-1.5 text-sm text-ink transition-all duration-150 hover:border-horizon active:scale-95"
-              >
-                <Icon className="h-4 w-4 text-horizon" />
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <section>
+        <SectionTitle>Cómo acompañar bien</SectionTitle>
+        <Card className="mt-3 divide-y divide-border/60">
+          <Guideline icon={<Ear className="size-4" />} text="Escuchá sin apurarte a resolver. A veces alcanza con estar." />
+          <Guideline icon={<Heart className="size-4" />} text="Ofrecé presencia concreta: un mensaje, un rato juntos, un oído." />
+          <Guideline
+            icon={<ShieldCheck className="size-4" />}
+            text={
+              <>
+                Si hay crisis, priorizá ayuda profesional.{' '}
+                <button type="button" className="text-listening-strong underline" onClick={() => navigate('/help')}>
+                  Ver líneas de ayuda
+                </button>
+                .
+              </>
+            }
+          />
+        </Card>
+      </section>
 
-      {/* Buscar compañía */}
-      <div className="border-l-2 border-mist bg-white p-4">
-        <p className="mb-3 text-sm font-medium text-dusk">¿Qué necesitás ahora?</p>
-        <div className="flex flex-wrap gap-2">
-          {intents.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              onClick={() => handleSearch(value)}
-              className={
-                selectedIntent === value
-                  ? 'flex items-center gap-1.5 rounded-full bg-calm px-3 py-1.5 text-sm font-medium text-white transition-all active:scale-95'
-                  : 'flex items-center gap-1.5 rounded-full border border-mist px-3 py-1.5 text-sm text-ink transition-all duration-150 hover:border-calm active:scale-95'
-              }
+      <section>
+        <SectionTitle>Buscando compañía ahora</SectionTitle>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {intents.map((intent) => (
+            <Button
+              key={intent.value}
+              size="sm"
+              variant={selected === intent.value ? 'listening' : 'outline'}
+              onClick={() => search(intent.value)}
             >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
+              {intent.label}
+            </Button>
           ))}
         </div>
-
-        {selectedIntent && (
-          <div className="mt-4">
-            {loadingList ? (
-              <p className="text-sm text-dusk">Buscando...</p>
-            ) : available.length === 0 ? (
-              <p className="text-sm text-dusk">
-                Nadie disponible para esto ahora mismo. Probá con otra opción, o volvé más tarde.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {available.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between rounded-md border border-mist p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Avatar
-                        avatarUrl={a.user.avatarUrl}
-                        name={a.user.displayName || a.user.username}
-                        size="sm"
-                      />
-                      <span className="text-sm font-medium text-ink">
-                        {a.user.displayName || a.user.username}
-                      </span>
+        {selected && loadingList ? <div className="mt-4"><Spinner /></div> : null}
+        {selected && !loadingList && available.length === 0 ? (
+          <EmptyState
+            className="mt-4"
+            icon={<Ear className="size-6" />}
+            title="Nadie disponible para esto ahora"
+            description="Probá con otra opción, o volvé más tarde."
+          />
+        ) : null}
+        <div className="mt-4 space-y-3">
+          {available.map((item) => {
+            const name = item.user.displayName || item.user.username;
+            return (
+              <Card key={item.id} className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar avatarUrl={item.user.avatarUrl} name={name} size="md" />
+                    <div>
+                      <p className="font-medium">{name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {intents.find((intent) => intent.value === item.intent)?.label}
+                      </p>
                     </div>
-                    <button
-                      onClick={() => handleStartChat(a.user.id)}
-                      className="rounded-md bg-horizon px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-horizon/90 active:scale-95"
-                    >
-                      Conversar
-                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  {sent[item.id] ? (
+                    <p className="rounded-xl bg-listening-soft/50 px-3 py-2 text-sm text-listening-strong" role="status">
+                      Le hiciste saber que estás.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          loading={Boolean(sending[item.id])}
+                          onClick={() => sendWithYou(item)}
+                        >
+                          Estoy con vos
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="listening"
+                          onClick={async () => {
+                            const conversation = await getOrCreateConversation(item.user.id);
+                            navigate(`/messages/${conversation.id}`);
+                          }}
+                        >
+                          Ofrecer escucha
+                        </Button>
+                      </div>
+                      {sendError[item.id] ? (
+                        <p role="alert" className="text-xs font-medium text-destructive">
+                          {sendError[item.id]}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Guideline({ icon, text }: { icon: ReactNode; text: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 p-4">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-listening-strong shadow-soft">
+        {icon}
+      </span>
+      <p className="text-sm leading-relaxed text-foreground/90">{text}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
-import Layout from './components/Layout';
+import Layout, { HelpLayout } from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
@@ -12,6 +12,8 @@ import ConversationsPage from './pages/ConversationsPage';
 import ChatPage from './pages/ChatPage';
 import PostPage from './pages/PostPage';
 import CompanionModePage from './pages/CompanionModePage';
+import CreatePostPage from './pages/CreatePostPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -20,7 +22,14 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/help" element={<HelpResourcesPage />} />
+          <Route
+            path="/help"
+            element={
+              <HelpLayout>
+                <HelpResourcesPage />
+              </HelpLayout>
+            }
+          />
 
           <Route
             element={
@@ -30,6 +39,8 @@ export default function App() {
             }
           >
             <Route path="/feed" element={<FeedPage />} />
+            <Route path="/create" element={<CreatePostPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/messages" element={<ConversationsPage />} />

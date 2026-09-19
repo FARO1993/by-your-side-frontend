@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { getFeed } from '../api/posts';
-import { getStatusFeed } from '../api/statuses';
-import type { Post, Status } from '../api/types';
-import PostCard from '../components/PostCard';
-import CreatePostForm from '../components/CreatePostForm';
-import StatusPicker from '../components/StatusPicker';
-import StatusCard from '../components/StatusCard';
+import { RefreshCw } from 'lucide-react';
+import { createPost, getFeed } from '../api/posts';
+import { getStatusFeed, setStatus } from '../api/statuses';
+import type { Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
+import { Composer } from '../components/byourside/composer';
+import { EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
+import { PostCardSkeleton } from '../components/byourside/post-skeleton';
+import PostCard from '../components/PostCard';
+import StatusCard from '../components/StatusCard';
 import SupportReminderCard from '../components/SupportReminderCard';
+import { Logo } from '../components/byourside/logo';
 
 export default function FeedPage() {
   const { user } = useAuth();
@@ -15,8 +18,11 @@ export default function FeedPage() {
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(null);
     Promise.all([getFeed(), getStatusFeed()])
       .then(([postsPage, statusesData]) => {
         setPosts(postsPage.content);
@@ -24,47 +30,84 @@ export default function FeedPage() {
       })
       .catch(() => setError('No se pudo cargar el feed'))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
-  function handlePostCreated(newPost: Post) {
-    setPosts((prev) => [newPost, ...prev]);
+  async function handlePost(content: string) {
+    setSubmitting(true);
+    try {
+      const post = await createPost({ content });
+      setPosts((prev) => [post, ...prev]);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function handleStatusSet(newStatus: Status) {
-    // Reemplaza el estado anterior del usuario actual si ya tenia uno en la lista,
-    // o lo agrega al principio si es el primero.
-    setStatuses((prev) => [newStatus, ...prev.filter((s) => s.user.id !== newStatus.user.id)]);
+  async function handleMood(mood: StatusMood) {
+    const status = await setStatus(mood);
+    setStatuses((prev) => [status, ...prev.filter((item) => item.user.id !== status.user.id)]);
   }
+
+  const name = user?.displayName || user?.username || '';
 
   return (
-    <div>
-      <h1 className="mb-6 font-serif text-2xl font-semibold text-ink">
-        Hola, {user?.displayName || user?.username} 👋
-      </h1>
-  
+    <div className="space-y-5">
+      <header>
+        <h1 className="font-serif text-2xl text-balance sm:text-3xl">Hola, {name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Estamos acá, a tu ritmo.</p>
+      </header>
+
       <SupportReminderCard />
-      <StatusPicker onSet={handleStatusSet} />
-  
-      {statuses.length > 0 && (
-        <div className="mb-6">
-          {statuses.map((status) => (
-            <StatusCard key={status.id} status={status} />
-          ))}
+
+      {user ? (
+        <Composer
+          authorName={name}
+          avatarUrl={user.avatarUrl}
+          onSubmit={handlePost}
+          onMood={handleMood}
+          submitting={submitting}
+        />
+      ) : null}
+
+      <div className="flex items-end justify-between">
+        <SectionTitle>Cerca tuyo</SectionTitle>
+        <button
+          type="button"
+          onClick={load}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="size-3.5" />
+          Actualizar
+        </button>
+      </div>
+
+      {error ? <ErrorState description={error} onRetry={load} /> : null}
+      {loading ? (
+        <div className="space-y-4">
+          <PostCardSkeleton />
+          <PostCardSkeleton />
         </div>
-      )}
-  
-      <CreatePostForm onCreated={handlePostCreated} />
-  
-      {loading && <p className="text-dusk">Cargando feed...</p>}
-      {error && <p className="text-red-600">{error}</p>}
-  
-      {!loading && !error && posts.length === 0 && (
-        <p className="text-dusk">Todavía no hay posts en tu feed. ¡Publicá algo o seguí a alguien!</p>
-      )}
-  
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
+      ) : null}
+
+      {!loading && !error && statuses.length === 0 && posts.length === 0 ? (
+        <EmptyState
+          icon={<Logo />}
+          title="Todavía está en calma por acá"
+          description="Cuando alguien comparta, va a aparecer en este espacio. Podés ser la primera presencia."
+        />
+      ) : null}
+
+      <div className="space-y-4">
+        {statuses.map((status) => (
+          <StatusCard key={status.id} status={status} />
+        ))}
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Check, UserPlus } from 'lucide-react';
 import { followUser, unfollowUser } from '../api/follows';
+import { Button } from './byourside/ui';
 
 export default function FollowButton({
   userId,
@@ -10,9 +12,11 @@ export default function FollowButton({
 }) {
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
     setSubmitting(true);
+    setError(null);
     try {
       if (isFollowing) {
         await unfollowUser(userId);
@@ -22,23 +26,30 @@ export default function FollowButton({
         setIsFollowing(true);
       }
     } catch {
-      // Silencioso a proposito.
+      setError('No se pudo completar la acción.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={submitting}
-      className={
-        isFollowing
-          ? 'rounded-md border border-mist px-3 py-1 text-sm font-medium text-dusk transition-all duration-150 hover:border-dusk active:scale-95 disabled:opacity-60'
-          : 'rounded-md bg-horizon px-3 py-1 text-sm font-medium text-white transition-all duration-150 hover:bg-horizon/90 active:scale-95 disabled:opacity-60'
-      }
-    >
-      {isFollowing ? 'Dejar de seguir' : 'Seguir'}
-    </button>
+    <div className="inline-flex flex-col items-end gap-1">
+      <Button
+        type="button"
+        size="sm"
+        variant={isFollowing ? 'outline' : 'soft'}
+        loading={submitting}
+        aria-pressed={isFollowing}
+        onClick={handleClick}
+      >
+        {isFollowing ? <Check className="size-4" /> : <UserPlus className="size-4" />}
+        {isFollowing ? 'Acompañás' : 'Acompañar'}
+      </Button>
+      {error ? (
+        <p role="alert" className="text-xs font-medium text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
