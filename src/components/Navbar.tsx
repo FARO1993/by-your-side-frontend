@@ -6,6 +6,7 @@ import Logo from './Logo';
 import NotificationBell from './NotificationBell';
 import Avatar from './Avatar';
 import { MenuIcon, CloseIcon, HelpIcon, CompassIcon, ChatBubbleIcon, ChevronDownIcon, LogoutIcon } from './Icons';
+import { UsersIcon } from './Icons';
 
 function IconButton({
   to,
@@ -70,6 +71,9 @@ export default function Navbar() {
           </IconButton>
           <IconButton to="/discover" title="Descubrir">
             <CompassIcon />
+          </IconButton>
+          <IconButton to="/companion" title="Modo compañía">
+            <UsersIcon />
           </IconButton>
           <IconButton to="/messages" title="Mensajes" badge={unreadCount}>
             <ChatBubbleIcon />

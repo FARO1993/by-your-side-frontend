@@ -153,3 +153,13 @@ export interface Conversation {
   lastMessageAt: string | null;
   unreadCount: number;
 }
+
+export type CompanionIntent = 'TALK' | 'DISTRACTION' | 'WATCH_TOGETHER' | 'MUSIC' | 'LAUGH' | 'JUST_COMPANY';
+
+export interface Availability {
+  id: string;
+  user: UserSummary;
+  intent: CompanionIntent;
+  createdAt: string;
+  expiresAt: string;
+}
