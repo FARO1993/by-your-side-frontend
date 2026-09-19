@@ -16,15 +16,14 @@ export interface User {
 }
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterData {
-  username: string;
+  displayName?: string;
   email: string;
   password: string;
-  displayName?: string;
 }
 
 // Espejo de ErrorResponse del backend (GlobalExceptionHandler)
@@ -152,4 +151,14 @@ export interface Conversation {
   lastMessageContent: string | null;
   lastMessageAt: string | null;
   unreadCount: number;
+}
+
+export type CompanionIntent = 'TALK' | 'DISTRACTION' | 'WATCH_TOGETHER' | 'MUSIC' | 'LAUGH' | 'JUST_COMPANY';
+
+export interface Availability {
+  id: string;
+  user: UserSummary;
+  intent: CompanionIntent;
+  createdAt: string;
+  expiresAt: string;
 }
