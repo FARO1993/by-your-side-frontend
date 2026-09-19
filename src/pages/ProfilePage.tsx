@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '../api/chat';
+import { PencilIcon } from '../components/Icons';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -80,11 +81,11 @@ export default function ProfilePage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-horizon text-xs text-white disabled:opacity-60"
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-horizon text-white transition-transform active:scale-90 disabled:opacity-60"
                   title="Cambiar foto de perfil"
                 >
-                  {uploading ? '...' : '✎'}
-                </button>
+                {uploading ? '...' : <PencilIcon className="h-3.5 w-3.5" />}
+              </button>
               )}
               <input
                 ref={fileInputRef}

@@ -13,7 +13,7 @@ export default function PostCard({ post }: { post: Post }) {
   const isOwnPost = user?.id === post.author.id;
 
   return (
-    <article className="mb-4 border-l-2 border-horizon bg-white p-4">
+    <article className="mb-4 animate-fade-slide-in border-l-2 border-horizon bg-white p-4">
       <div className="flex items-center justify-between">
         <Link to={`/profile/${post.author.id}`} className="flex items-center gap-2">
           <Avatar avatarUrl={post.author.avatarUrl} name={post.author.displayName || post.author.username} size="sm" />

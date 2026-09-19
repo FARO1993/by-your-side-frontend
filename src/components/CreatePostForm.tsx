@@ -43,7 +43,7 @@ export default function CreatePostForm({ onCreated }: { onCreated: (post: Post) 
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-horizon px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-horizon/90 disabled:opacity-60"
+          className="rounded-md bg-horizon px-4 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-horizon/90 active:scale-95 disabled:opacity-60"
         >
           {submitting ? 'Publicando...' : 'Publicar'}
         </button>
