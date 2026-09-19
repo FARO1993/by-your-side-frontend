@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { getPost } from '../api/posts';
 import type { Post } from '../api/types';
 import PostCard from '../components/PostCard';
+import { ErrorState } from '../components/byourside/ui';
+import { PostCardSkeleton } from '../components/byourside/post-skeleton';
 
 export default function PostPage() {
   const { postId } = useParams<{ postId: string }>();
@@ -12,34 +15,23 @@ export default function PostPage() {
 
   useEffect(() => {
     if (!postId) return;
-
     getPost(postId)
       .then(setPost)
       .catch(() => setError('No se pudo cargar este post'))
       .finally(() => setLoading(false));
   }, [postId]);
 
-  if (loading) {
-    return <p className="text-dusk">Cargando...</p>;
-  }
-
-  if (error || !post) {
-    return (
-      <div>
-        <p className="text-red-600">{error ?? 'Post no encontrado'}</p>
-        <Link to="/feed" className="mt-2 inline-block text-sm text-horizon hover:underline">
-          Volver al feed
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <Link to="/feed" className="mb-4 inline-block text-sm text-dusk hover:text-ink">
-        ← Volver al feed
+    <div className="space-y-4">
+      <Link to="/feed" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" />
+        Volver al feed
       </Link>
-      <PostCard post={post} />
+      {loading ? <PostCardSkeleton /> : null}
+      {error || (!loading && !post) ? (
+        <ErrorState description={error ?? 'Post no encontrado'} />
+      ) : null}
+      {post ? <PostCard post={post} /> : null}
     </div>
   );
 }

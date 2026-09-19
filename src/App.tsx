@@ -12,6 +12,8 @@ import ConversationsPage from './pages/ConversationsPage';
 import ChatPage from './pages/ChatPage';
 import PostPage from './pages/PostPage';
 import CompanionModePage from './pages/CompanionModePage';
+import CreatePostPage from './pages/CreatePostPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -37,6 +39,8 @@ export default function App() {
             }
           >
             <Route path="/feed" element={<FeedPage />} />
+            <Route path="/create" element={<CreatePostPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/messages" element={<ConversationsPage />} />

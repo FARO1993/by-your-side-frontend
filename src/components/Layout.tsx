@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChatNotificationsProvider, useChatNotifications } from '../context/ChatNotificationsContext';
 import { useAuth } from '../context/AuthContext';
-import NotificationBell from './NotificationBell';
-import { AppShell, type AppShellRoute } from './byourside/app-shell';
+import { useNotificationUnread } from '../hooks/useNotificationUnread';
+import { AppShell, type AppShellRoute, type AppShellWidth } from './byourside/app-shell';
 
 function pathFromRoute(route: AppShellRoute, userId?: string): string {
   switch (route) {
@@ -21,11 +21,12 @@ function pathFromRoute(route: AppShellRoute, userId?: string): string {
       return '/login';
     case 'register':
       return '/register';
-    case 'feed':
     case 'create':
-    case 'post':
-      return '/feed';
+      return '/create';
     case 'notifications':
+      return '/notifications';
+    case 'feed':
+    case 'post':
       return '/feed';
     default:
       return '/feed';
@@ -39,19 +40,28 @@ function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/discover')) return 'discover';
   if (pathname.startsWith('/companion')) return 'companion';
   if (pathname.startsWith('/help')) return 'help';
+  if (pathname.startsWith('/create')) return 'create';
+  if (pathname.startsWith('/notifications')) return 'notifications';
   if (pathname.startsWith('/login')) return 'login';
   if (pathname.startsWith('/register')) return 'register';
   return 'feed';
 }
 
+function widthFromPath(pathname: string): AppShellWidth {
+  if (pathname.startsWith('/profile') || pathname.startsWith('/discover') || pathname.startsWith('/companion') || pathname.startsWith('/help')) {
+    return '2xl';
+  }
+  return 'xl';
+}
+
 function RouterAppShell({
   children,
   unreadMessages = 0,
-  notificationSlot,
+  unreadNotifications = 0,
 }: {
   children: ReactNode;
   unreadMessages?: number;
-  notificationSlot?: ReactNode;
+  unreadNotifications?: number;
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,17 +72,16 @@ function RouterAppShell({
   return (
     <AppShell
       active={active}
-      onNavigate={(route) => {
-        if (route === 'notifications') return;
-        navigate(pathFromRoute(route, user?.id));
-      }}
-      width="2xl"
+      onNavigate={(route) => navigate(pathFromRoute(route, user?.id))}
+      width={widthFromPath(location.pathname)}
       bare={bare}
-      unread={{ messages: unreadMessages }}
+      unread={{ messages: unreadMessages, notifications: unreadNotifications }}
       authenticated={Boolean(user)}
       user={user}
-      onLogout={logout}
-      notificationSlot={notificationSlot}
+      onLogout={() => {
+        logout();
+        navigate('/login');
+      }}
     >
       {children}
     </AppShell>
@@ -81,8 +90,9 @@ function RouterAppShell({
 
 function AuthenticatedAppShell({ children }: { children: ReactNode }) {
   const { unreadCount } = useChatNotifications();
+  const { notificationUnread } = useNotificationUnread();
   return (
-    <RouterAppShell unreadMessages={unreadCount} notificationSlot={<NotificationBell />}>
+    <RouterAppShell unreadMessages={unreadCount} unreadNotifications={notificationUnread}>
       {children}
     </RouterAppShell>
   );
@@ -100,7 +110,6 @@ export default function Layout() {
 
 export function HelpLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-
   if (user) {
     return (
       <ChatNotificationsProvider>
@@ -108,6 +117,5 @@ export function HelpLayout({ children }: { children: ReactNode }) {
       </ChatNotificationsProvider>
     );
   }
-
   return <RouterAppShell>{children}</RouterAppShell>;
 }

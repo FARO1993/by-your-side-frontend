@@ -1,27 +1,24 @@
 @import "tailwindcss";
 
-/*
-  Presencia design tokens (v0 handoff).
-  Canonical values live on :root. Tailwind utilities are exposed via @theme inline.
-  Legacy names (paper, ink, dusk, mist, horizon, calm) alias the new tokens so
-  existing components keep compiling without class changes.
-*/
-
 :root {
-  --background: oklch(0.976 0.008 70);
+  color-scheme: light;
+  --radius: 1rem;
+
   --cream: oklch(0.976 0.008 70);
+  --background: oklch(0.976 0.008 70);
   --foreground: oklch(0.29 0.02 275);
+
   --card: oklch(0.995 0.004 75);
   --card-foreground: oklch(0.29 0.02 275);
   --popover: oklch(0.995 0.004 75);
   --popover-foreground: oklch(0.29 0.02 275);
+
   --muted: oklch(0.955 0.01 70);
   --muted-foreground: oklch(0.5 0.02 278);
+
   --border: oklch(0.9 0.01 70);
   --input: oklch(0.9 0.01 70);
   --ring: oklch(0.7 0.12 30);
-  --destructive: oklch(0.58 0.16 28);
-  --destructive-foreground: oklch(0.99 0.01 60);
 
   --presence: oklch(0.71 0.13 32);
   --presence-strong: oklch(0.56 0.15 32);
@@ -33,12 +30,13 @@
   --listening-soft: oklch(0.955 0.02 190);
   --listening-foreground: oklch(0.99 0.01 190);
 
-  --primary: var(--presence);
-  --primary-foreground: var(--presence-foreground);
-  --secondary: var(--muted);
-  --secondary-foreground: var(--foreground);
-  --accent: var(--presence-soft);
-  --accent-foreground: var(--foreground);
+  --primary: oklch(0.71 0.13 32);
+  --primary-foreground: oklch(0.99 0.01 60);
+  --secondary: oklch(0.955 0.01 70);
+  --secondary-foreground: oklch(0.29 0.02 275);
+  --accent: oklch(0.955 0.01 70);
+  --accent-foreground: oklch(0.29 0.02 275);
+  --destructive: oklch(0.58 0.16 28);
 
   --paper: var(--cream);
   --ink: var(--foreground);
@@ -47,11 +45,8 @@
   --horizon: var(--presence);
   --calm: var(--listening);
 
-  --radius: 1rem;
-
   --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-fraunces: "Fraunces", ui-serif, Georgia, serif;
-
   --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -69,83 +64,40 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
   --color-presence: var(--presence);
   --color-presence-strong: var(--presence-strong);
   --color-presence-soft: var(--presence-soft);
   --color-presence-foreground: var(--presence-foreground);
-
   --color-listening: var(--listening);
   --color-listening-strong: var(--listening-strong);
   --color-listening-soft: var(--listening-soft);
   --color-listening-foreground: var(--listening-foreground);
-
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-dusk: var(--dusk);
   --color-mist: var(--mist);
   --color-horizon: var(--horizon);
   --color-calm: var(--calm);
-
   --font-sans: var(--font-inter);
   --font-serif: var(--font-fraunces);
-
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 6px);
   --radius-2xl: calc(var(--radius) + 12px);
-
   --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes fade-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes aurora-drift {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(3%, -4%) scale(1.08);
-  }
-}
-
-@keyframes breathe {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.04);
-  }
-}
-
 @keyframes gentle-pop {
-  0% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.06);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  45% { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 
 @keyframes soft-rise {
@@ -160,25 +112,8 @@
 }
 
 @keyframes skeleton-shimmer {
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@utility animate-fade-slide-in {
-  animation: fade-slide-in 0.25s ease-out;
-}
-
-@utility animate-aurora-a {
-  animation: aurora-drift 75s ease-in-out infinite;
-}
-
-@utility animate-aurora-b {
-  animation: aurora-drift 95s ease-in-out infinite reverse;
-}
-
-@utility animate-breathe {
-  animation: breathe 5s ease-in-out infinite;
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
 }
 
 @utility animate-gentle-pop {
@@ -186,7 +121,7 @@
 }
 
 @utility animate-soft-rise {
-  animation: soft-rise 0.4s var(--ease-calm);
+  animation: soft-rise 0.4s var(--ease-calm) both;
 }
 
 @utility shadow-soft {
@@ -212,34 +147,30 @@
   animation: skeleton-shimmer 1.6s ease-in-out infinite;
 }
 
-body {
-  @apply bg-paper text-ink font-sans antialiased;
-  text-rendering: optimizeLegibility;
-}
+@layer base {
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-fraunces);
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-fraunces);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
 }
 
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-
   .animate-gentle-pop,
   .animate-soft-rise,
   .skeleton {
