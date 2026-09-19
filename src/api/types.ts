@@ -16,15 +16,14 @@ export interface User {
 }
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterData {
-  username: string;
+  displayName?: string;
   email: string;
   password: string;
-  displayName?: string;
 }
 
 // Espejo de ErrorResponse del backend (GlobalExceptionHandler)
