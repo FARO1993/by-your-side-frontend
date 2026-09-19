@@ -14,6 +14,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    debugger;
     event.preventDefault();
     setError(null);
     setSubmitting(true);
@@ -21,6 +22,7 @@ export default function LoginPage() {
       await login({ username, password });
       navigate('/feed');
     } catch (err) {
+      debugger;
       if (axios.isAxiosError<ApiErrorResponse>(err)) {
         setError(err.response?.data.message ?? 'Error al iniciar sesión');
       } else {

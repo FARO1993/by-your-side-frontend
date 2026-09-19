@@ -84,6 +84,7 @@ export default function Navbar() {
             <div ref={userMenuRef} className="relative ml-2">
               <button
                 onClick={() => setUserMenuOpen((prev) => !prev)}
+                data-testid="user-menu-trigger"
                 className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-mist"
               >
                 <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.username} size="sm" />
@@ -107,6 +108,7 @@ export default function Navbar() {
                       setUserMenuOpen(false);
                       logout();
                     }}
+                    data-testid="logout-button"
                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-dusk hover:bg-paper hover:text-ink"
                   >
                     <LogoutIcon className="h-3.5 w-3.5" />
