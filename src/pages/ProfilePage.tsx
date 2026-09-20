@@ -10,7 +10,7 @@ import { getProfileOverlay, mockReceivedPresence, saveProfileOverlay } from '../
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
 import PostCard from '../components/PostCard';
-import { Badge, Button, Card, EmptyState, ErrorState } from '../components/byourside/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
@@ -91,43 +91,50 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-presence-soft via-card to-listening-soft sm:h-28" />
-        <div className="px-5 pt-0 pb-5 sm:px-6">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <button
-              type="button"
-              disabled={!isOwn || uploading}
-              onClick={() => isOwn && fileInputRef.current?.click()}
-              className="-mt-10 rounded-full"
-              title={isOwn ? 'Cambiar foto de perfil' : undefined}
-            >
-              <Avatar
-                avatarUrl={profile.avatarUrl}
-                name={displayName}
-                size="lg"
-                className="ring-4 ring-card"
-              />
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
-            <div className="mb-1 flex flex-wrap justify-end gap-2">
-              {!isOwn ? (
-                <>
-                  <Button size="sm" variant="outline" onClick={handleMessage}>
-                    <MessageCircle className="size-4" />
-                    Mensajes
-                  </Button>
-                  <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
-                </>
-              ) : (
-                <Button size="sm" variant="soft" onClick={() => setEditing((prev) => !prev)}>
-                  <Settings className="size-4" />
-                  Editar perfil
+        <div className="relative">
+          <div className="h-24 bg-gradient-to-r from-presence-soft via-card to-listening-soft sm:h-28" />
+          <button
+            type="button"
+            disabled={!isOwn || uploading}
+            onClick={() => isOwn && fileInputRef.current?.click()}
+            className="absolute -bottom-6 left-5 rounded-full sm:left-6"
+            title={isOwn ? 'Cambiar foto de perfil' : undefined}
+          >
+            <Avatar
+              avatarUrl={profile.avatarUrl}
+              name={displayName}
+              size="lg"
+              className="ring-4 ring-card"
+            />
+          </button>
+          <div className="absolute -bottom-6 right-5 flex gap-2 sm:right-6">
+            {!isOwn ? (
+              <>
+                <Button size="sm" variant="outline" onClick={handleMessage}>
+                  <MessageCircle className="size-4" />
+                  Mensajes
                 </Button>
-              )}
-            </div>
+                <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="soft"
+                onClick={() => {
+                  setOverlayName(displayName);
+                  setOverlayBio(bio ?? '');
+                  setEditing((prev) => !prev);
+                }}
+              >
+                <Settings className="size-4" />
+                Editar perfil
+              </Button>
+            )}
           </div>
-
-          <h1 className="mt-4 font-serif text-2xl">{displayName}</h1>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+        <div className="px-5 pt-8 pb-5 sm:px-6">
+          <h1 className="font-serif text-2xl">{displayName}</h1>
           <Badge tone={moodBadge?.tone ?? 'neutral'} className="mt-2">
             {moodBadge?.label ?? 'Sin estado reciente'}
           </Badge>
@@ -138,33 +145,43 @@ export default function ProfilePage() {
             Se unió {new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
           </p>
 
-          {editing && isOwn ? (
-            <div className="mt-4 space-y-3 rounded-2xl bg-muted/50 p-4">
-              <p className="text-xs text-muted-foreground">
-                Nombre y bio se guardan localmente hasta que exista edición en el servidor. La foto sí se
-                sube de verdad.
-              </p>
-              <input
+          {isOwn && editing ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4">
+              <TextField
+                label="Nombre a mostrar"
                 value={overlayName}
                 onChange={(event) => setOverlayName(event.target.value)}
-                placeholder="Nombre"
-                className="min-h-11 w-full rounded-xl border border-input bg-card px-3.5 text-sm"
+                placeholder={profile.displayName ?? profile.username}
               />
-              <textarea
+              <TextArea
+                label="Bio"
                 value={overlayBio}
                 onChange={(event) => setOverlayBio(event.target.value)}
-                placeholder="Bio"
-                className="min-h-24 w-full rounded-xl border border-input bg-card p-3 text-sm"
+                placeholder="Contá algo sobre vos"
+                rows={3}
               />
-              <Button
-                size="sm"
-                onClick={() => {
-                  saveProfileOverlay(profile.id, { displayName: overlayName, bio: overlayBio });
-                  setEditing(false);
-                }}
-              >
-                Guardar
-              </Button>
+              <p className="text-xs text-muted-foreground">
+                Estos cambios se guardan en este dispositivo hasta que el servidor los soporte de forma
+                permanente.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  onClick={() => {
+                    saveProfileOverlay(profileId, {
+                      displayName: overlayName.trim() || undefined,
+                      bio: overlayBio.trim() || undefined,
+                    });
+                    setEditing(false);
+                  }}
+                >
+                  Guardar
+                </Button>
+              </div>
             </div>
           ) : null}
 
@@ -208,8 +225,13 @@ export default function ProfilePage() {
         )
       ) : (
         <EmptyState
-          title="Todavía no hay un detalle de presencia"
-          description="Este resumen se va a completar cuando el servidor exponga el agregado. El número de arriba es una aproximación local."
+          title="La presencia que te dejaron vive acá"
+          description="Cada vez que alguien esté de tu lado o te ofrezca escucha, vas a poder verlo en este espacio."
+          action={
+            <Button size="sm" variant="listening" onClick={() => navigate('/feed')}>
+              Ir al inicio
+            </Button>
+          }
         />
       )}
 
