@@ -14,11 +14,11 @@ import { Button, Card, EmptyState, SectionTitle, Spinner } from '../components/b
 
 const intents: { value: CompanionIntent; label: string }[] = [
   { value: 'TALK', label: 'Hablar' },
-  { value: 'DISTRACTION', label: 'Jugar / distraerme' },
+  { value: 'DISTRACTION', label: 'Distraerme' },
   { value: 'WATCH_TOGETHER', label: 'Ver algo juntos' },
   { value: 'MUSIC', label: 'Escuchar música' },
   { value: 'LAUGH', label: 'Reírnos un rato' },
-  { value: 'JUST_COMPANY', label: 'Solo estar acompañado' },
+  { value: 'JUST_COMPANY', label: 'Solo compañía' },
 ];
 
 export default function CompanionModePage() {
@@ -94,12 +94,23 @@ export default function CompanionModePage() {
               Pausar
             </Button>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-              {intents.map((intent) => (
-                <Button key={intent.value} size="sm" variant="listening" onClick={() => toggle(intent.value)}>
-                  Activar · {intent.label}
-                </Button>
-              ))}
+            <div className="w-full">
+              <p className="mb-2 text-sm font-medium text-muted-foreground">
+                ¿Para qué estás disponible?
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {intents.map((intent) => (
+                  <Button
+                    key={intent.value}
+                    size="sm"
+                    variant="listening"
+                    className="rounded-2xl text-center leading-tight sm:rounded-full"
+                    onClick={() => toggle(intent.value)}
+                  >
+                    {intent.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
           <p className="inline-flex items-center gap-2 text-sm" aria-live="polite">
@@ -137,6 +148,7 @@ export default function CompanionModePage() {
               key={intent.value}
               size="sm"
               variant={selected === intent.value ? 'listening' : 'outline'}
+              className="rounded-2xl text-center leading-tight sm:rounded-full"
               onClick={() => search(intent.value)}
             >
               {intent.label}

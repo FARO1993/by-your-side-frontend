@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   Bell,
   Compass,
   Heart,
   Home,
   LifeBuoy,
-  LogOut,
   MessageCircle,
   Plus,
   User,
@@ -120,7 +119,6 @@ function DesktopNav({
   unread,
   authenticated,
   user,
-  onLogout,
 }: Omit<AppShellProps, 'children' | 'width' | 'bare'>) {
   return (
     <header className="sticky top-0 z-30 hidden h-16 border-b border-border/60 bg-background/80 backdrop-blur-md md:block">
@@ -182,7 +180,7 @@ function DesktopNav({
             Compartir
           </Button>
           {authenticated && user ? (
-            <UserMenu user={user} onLogout={onLogout} />
+            <UserAvatarLink user={user} active={active} onNavigate={onNavigate} />
           ) : (
             <Button size="sm" variant="outline" className="ml-1" onClick={() => onNavigate('login')}>
               Ingresar
@@ -295,52 +293,26 @@ function MobileTabBar({
   );
 }
 
-function UserMenu({
+function UserAvatarLink({
   user,
-  onLogout,
+  active,
+  onNavigate,
 }: {
   user: AppShellUser;
-  onLogout?: () => void;
+  active: AppShellRoute;
+  onNavigate: (route: AppShellRoute) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const name = user.displayName || user.username;
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   return (
-    <div ref={menuRef} className="relative ml-1">
-      <button
-        type="button"
-        data-testid="user-menu-trigger"
-        onClick={() => setOpen((prev) => !prev)}
-        className="rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none"
-      >
-        <Avatar avatarUrl={user.avatarUrl} name={name} size="sm" />
-      </button>
-      {open ? (
-        <div className="absolute top-12 right-0 z-30 w-48 rounded-2xl border border-border/60 bg-card p-1 shadow-lift">
-          <p className="truncate px-3 py-2 text-sm font-medium">{name}</p>
-          <button
-            type="button"
-            data-testid="logout-button"
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={() => {
-              setOpen(false);
-              onLogout?.();
-            }}
-          >
-            <LogOut className="size-3.5" />
-            Cerrar sesión
-          </button>
-        </div>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      data-testid="own-avatar-link"
+      onClick={() => onNavigate('profile')}
+      aria-current={active === 'profile' ? 'page' : undefined}
+      className="ml-1 rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none"
+    >
+      <Avatar avatarUrl={user.avatarUrl} name={name} size="sm" />
+    </button>
   );
 }

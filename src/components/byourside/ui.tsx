@@ -250,7 +250,7 @@ export function EmptyState({
   action,
   className,
 }: {
-  icon?: ReactNode;
+  icon?: ReactNode | null;
   title: string;
   description?: string;
   action?: ReactNode;
@@ -258,9 +258,11 @@ export function EmptyState({
 }) {
   return (
     <div className={cn('animate-soft-rise rounded-2xl bg-card p-10 text-center shadow-soft', className)}>
-      <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-presence-soft text-presence-strong">
-        {icon ?? <PresenceGlyph className="h-4 w-6" />}
-      </div>
+      {icon !== null ? (
+        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-presence-soft text-presence-strong">
+          {icon ?? <PresenceGlyph className="h-4 w-6" />}
+        </div>
+      ) : null}
       <h2 className="font-serif text-lg font-semibold text-foreground">{title}</h2>
       {description ? (
         <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">{description}</p>
