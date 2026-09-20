@@ -10,7 +10,7 @@ import { getProfileOverlay, mockReceivedPresence, saveProfileOverlay } from '../
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
 import PostCard from '../components/PostCard';
-import { Badge, Button, Card, EmptyState, ErrorState } from '../components/byourside/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
@@ -117,7 +117,15 @@ export default function ProfilePage() {
                 <FollowButton userId={profile.id} initiallyFollowing={profile.followedByCurrentUser} />
               </>
             ) : (
-              <Button size="sm" variant="soft" onClick={() => setEditing((prev) => !prev)}>
+              <Button
+                size="sm"
+                variant="soft"
+                onClick={() => {
+                  setOverlayName(displayName);
+                  setOverlayBio(bio ?? '');
+                  setEditing((prev) => !prev);
+                }}
+              >
                 <Settings className="size-4" />
                 Editar perfil
               </Button>
@@ -136,6 +144,46 @@ export default function ProfilePage() {
             <CalendarDays className="size-3.5" />
             Se unió {new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
           </p>
+
+          {isOwn && editing ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4">
+              <TextField
+                label="Nombre a mostrar"
+                value={overlayName}
+                onChange={(event) => setOverlayName(event.target.value)}
+                placeholder={profile.displayName ?? profile.username}
+              />
+              <TextArea
+                label="Bio"
+                value={overlayBio}
+                onChange={(event) => setOverlayBio(event.target.value)}
+                placeholder="Contá algo sobre vos"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Estos cambios se guardan en este dispositivo hasta que el servidor los soporte de forma
+                permanente.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  onClick={() => {
+                    saveProfileOverlay(profileId, {
+                      displayName: overlayName.trim() || undefined,
+                      bio: overlayBio.trim() || undefined,
+                    });
+                    setEditing(false);
+                  }}
+                >
+                  Guardar
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-4 flex gap-8 border-t border-border/60 pt-4">
             <Stat value={profile.followersCount} label="te acompañan" />
