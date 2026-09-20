@@ -9,14 +9,12 @@ test.describe('Rutas protegidas', () => {
   test('/help es accesible sin sesión', async ({ page }) => {
     await page.goto('/help');
     await expect(page).toHaveURL('/help');
-    await expect(page.getByText('Recursos de ayuda')).toBeVisible();
+    await expect(page.getByText('Ayuda ahora')).toBeVisible();
   });
 
-  test('recargar en una ruta protegida no da 404 (SPA fallback)', async ({ page, context }) => {
-    // Regresion del bug que arreglamos con vercel.json -- reproducible
-    // tambien en local si el dev server no sirve bien rutas SPA.
+  test('recargar en una ruta protegida no da 404 (SPA fallback)', async ({ page }) => {
     await page.goto('/help');
     await page.reload();
-    await expect(page.getByText('Recursos de ayuda')).toBeVisible();
+    await expect(page.getByText('Ayuda ahora')).toBeVisible();
   });
 });
