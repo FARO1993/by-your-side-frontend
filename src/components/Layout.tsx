@@ -35,7 +35,7 @@ function pathFromRoute(route: AppShellRoute, userId?: string): string {
 
 function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/messages')) return 'messages';
-  if (pathname.startsWith('/profile')) return 'profile';
+  if (pathname.startsWith('/profile') || pathname.startsWith('/account')) return 'profile';
   if (pathname.startsWith('/posts')) return 'post';
   if (pathname.startsWith('/discover')) return 'discover';
   if (pathname.startsWith('/companion')) return 'companion';
@@ -79,7 +79,7 @@ function RouterAppShell({
       authenticated={Boolean(user)}
       user={user}
       onLogout={() => {
-        logout();
+        void logout();
         navigate('/login');
       }}
     >

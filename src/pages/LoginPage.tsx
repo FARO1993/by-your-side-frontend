@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
-import axios from 'axios';
+import { loginErrorMessage } from '../auth/apiError';
+import { consumeAuthNotice } from '../auth/session';
 import { useAuth } from '../context/AuthContext';
-import type { ApiErrorResponse } from '../api/types';
+import { AuthStatusMessage } from '../components/auth/AuthScaffold';
 import { Button, PresenceGlyph, TextField } from '../components/byourside/ui';
 import { Logo } from '../components/byourside/logo';
 
@@ -37,6 +38,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice] = useState(() => consumeAuthNotice());
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -49,11 +51,7 @@ export default function LoginPage() {
       await login({ email, password });
       navigate('/feed');
     } catch (err) {
-      if (axios.isAxiosError<ApiErrorResponse>(err)) {
-        setError(err.response?.data.message ?? 'Error al iniciar sesión');
-      } else {
-        setError('Error al iniciar sesión');
-      }
+      setError(loginErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -72,6 +70,11 @@ export default function LoginPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               Ingresá para reencontrarte con quienes te acompañan.
             </p>
+            {notice ? (
+              <div className="mt-6">
+                <AuthStatusMessage>{notice}</AuthStatusMessage>
+              </div>
+            ) : null}
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <TextField
                 label="Correo electrónico"
@@ -94,7 +97,7 @@ export default function LoginPage() {
                 disabled={submitting}
                 error={error ?? undefined}
               />
-              <Link to="/help" className="text-sm text-listening-strong hover:underline">
+              <Link to="/forgot-password" className="text-sm text-listening-strong hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
               <Button type="submit" fullWidth loading={submitting}>

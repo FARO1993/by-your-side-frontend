@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CalendarDays, MessageCircle, Settings } from 'lucide-react';
 import { getPublicProfile, getUserPosts, uploadAvatar } from '../api/users';
 import { getOrCreateConversation } from '../api/chat';
@@ -10,6 +10,7 @@ import { getProfileOverlay, mockReceivedPresence, saveProfileOverlay } from '../
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
 import PostCard from '../components/PostCard';
+import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
@@ -193,6 +194,18 @@ export default function ProfilePage() {
         </div>
       </Card>
 
+      {isOwn && currentUser && !currentUser.emailVerified ? (
+        <Card className="space-y-4 p-5">
+          <div>
+            <h2 className="font-serif text-lg">Verificá tu correo</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tu cuenta ya funciona. Si todavía no recibiste el email, podés pedir otro.
+            </p>
+          </div>
+          <ResendVerificationForm initialEmail={currentUser.email} idPrefix="profile-resend" />
+        </Card>
+      ) : null}
+
       <div role="tablist" className="flex rounded-full bg-muted p-1">
         {(['posts', 'presence'] as const).map((id) => (
           <button
@@ -236,11 +249,14 @@ export default function ProfilePage() {
       )}
 
       {isOwn ? (
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Link to="/account/password" className="text-sm font-semibold text-listening-strong hover:underline">
+            Cambiar contraseña
+          </Link>
           <Button
             variant="ghost"
             onClick={() => {
-              logout();
+              void logout();
               navigate('/login');
             }}
           >

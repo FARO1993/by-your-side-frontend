@@ -1,9 +1,9 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Mail, User } from 'lucide-react';
-import axios from 'axios';
+import { registerErrorMessage } from '../auth/apiError';
 import { useAuth } from '../context/AuthContext';
-import type { ApiErrorResponse, RegisterData } from '../api/types';
+import type { RegisterData } from '../api/types';
 import { Button, PresenceGlyph, TextField } from '../components/byourside/ui';
 import { Logo } from '../components/byourside/logo';
 
@@ -30,11 +30,7 @@ export default function RegisterPage() {
       await register(form);
       navigate('/feed');
     } catch (err) {
-      if (axios.isAxiosError<ApiErrorResponse>(err)) {
-        setError(err.response?.data.message ?? 'Error al registrarse');
-      } else {
-        setError('Error al registrarse');
-      }
+      setError(registerErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

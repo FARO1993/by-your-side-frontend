@@ -1,5 +1,8 @@
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
   username: string;
   role: string;
 }
@@ -13,6 +16,8 @@ export interface User {
   avatarUrl: string | null;
   role: string;
   createdAt: string;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
 }
 
 export interface LoginCredentials {

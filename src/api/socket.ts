@@ -2,8 +2,16 @@ import { Client, type IMessage } from '@stomp/stompjs';
 
 let client: Client | null = null;
 
+export function syncSocketAccessToken(token: string): void {
+  if (!client) return;
+  client.connectHeaders = {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export function connectSocket(token: string): Client {
   if (client?.connected) {
+    syncSocketAccessToken(token);
     return client;
   }
 
