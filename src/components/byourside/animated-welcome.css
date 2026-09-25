@@ -1,0 +1,255 @@
+/*
+  Animated welcome.
+  Geometry matches public/logo-mark.svg (viewBox 48, circles at cx 18 and cx 30).
+  Resting transforms are identity, so the last frame paints the original mark.
+
+  New user
+  0–150ms     still background, figures already apart
+  150–750ms   approach
+  750–950ms   embrace
+  950–1150ms  settle on the original logo
+  850–1150ms  wordmark
+  1150–1870ms one breath
+  1500ms      Bienvenido…
+  2550ms      Este es un espacio…
+  3600ms      A veces…
+  4650ms      Otras veces…
+  5450ms      Empecemos — then wait
+
+  Returning user
+  0–100ms     still background
+  100–500ms   approach
+  500–700ms   embrace
+  700–850ms   settle
+  600–850ms   wordmark
+  860–1240ms  breath
+  750ms       Hola de nuevo
+  900ms       Estamos acá
+  1700–2000ms fade
+*/
+
+.bys-screen {
+  --bys-mark-size: 7.25rem;
+  --bys-ease: var(--ease-calm);
+}
+
+@media (min-width: 640px) {
+  .bys-screen {
+    --bys-mark-size: 9.5rem;
+  }
+}
+
+.bys-mark {
+  width: var(--bys-mark-size);
+  height: var(--bys-mark-size);
+  overflow: visible;
+  transform-origin: center;
+  animation: bys-breath 720ms cubic-bezier(0.45, 0.05, 0.55, 0.95) 1150ms both;
+}
+
+.bys-figure {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.82;
+}
+
+.bys-figure-presence {
+  transform: translateX(-10px);
+}
+
+.bys-figure-listening {
+  transform: translateX(10px);
+}
+
+.bys-screen[data-variant='new-user'] .bys-figure-presence {
+  animation: bys-presence-new 1000ms var(--bys-ease) 150ms both;
+}
+
+.bys-screen[data-variant='new-user'] .bys-figure-listening {
+  animation: bys-listening-new 1000ms var(--bys-ease) 150ms both;
+}
+
+.bys-screen[data-variant='returning-user'] .bys-mark {
+  animation-name: bys-breath-soft;
+  animation-duration: 380ms;
+  animation-delay: 860ms;
+}
+
+.bys-screen[data-variant='returning-user'] .bys-figure-presence {
+  animation: bys-presence-returning 750ms var(--bys-ease) 100ms both;
+}
+
+.bys-screen[data-variant='returning-user'] .bys-figure-listening {
+  animation: bys-listening-returning 750ms var(--bys-ease) 100ms both;
+}
+
+.bys-wordmark {
+  animation: bys-rise 300ms var(--bys-ease) 850ms both;
+}
+
+.bys-screen[data-variant='returning-user'] .bys-wordmark {
+  animation-duration: 250ms;
+  animation-delay: 600ms;
+}
+
+.bys-rise {
+  animation: bys-rise 650ms var(--bys-ease) both;
+}
+
+.bys-screen[data-variant='returning-user'] .bys-rise {
+  animation-duration: 320ms;
+}
+
+.bys-screen.is-leaving {
+  pointer-events: none;
+  animation: bys-leave 300ms var(--bys-ease) forwards;
+}
+
+@keyframes bys-presence-new {
+  0% {
+    opacity: 0.82;
+    transform: translateX(-10px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(3px) scale(1.02);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bys-listening-new {
+  0% {
+    opacity: 0.82;
+    transform: translateX(10px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-3px) scale(1.02);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bys-presence-returning {
+  0% {
+    opacity: 0.82;
+    transform: translateX(-10px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  53% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(3px) scale(1.02);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bys-listening-returning {
+  0% {
+    opacity: 0.82;
+    transform: translateX(10px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  53% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-3px) scale(1.02);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bys-breath {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes bys-breath-soft {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes bys-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bys-leave {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bys-mark,
+  .bys-figure,
+  .bys-figure-presence,
+  .bys-figure-listening,
+  .bys-wordmark,
+  .bys-rise {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .bys-screen.is-leaving {
+    animation-duration: 160ms;
+  }
+}

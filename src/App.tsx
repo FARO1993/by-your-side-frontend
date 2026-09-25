@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -15,11 +16,25 @@ import CompanionModePage from './pages/CompanionModePage';
 import CreatePostPage from './pages/CreatePostPage';
 import NotificationsPage from './pages/NotificationsPage';
 
+const WelcomePreviewPage = import.meta.env.DEV
+  ? lazy(() => import('./pages/WelcomePreviewPage'))
+  : null;
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {WelcomePreviewPage ? (
+            <Route
+              path="/dev/welcome"
+              element={
+                <Suspense fallback={<div className="min-h-dvh bg-background" />}>
+                  <WelcomePreviewPage />
+                </Suspense>
+              }
+            />
+          ) : null}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
