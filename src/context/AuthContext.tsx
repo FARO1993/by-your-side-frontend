@@ -1,62 +1,123 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { login as loginRequest, register as registerRequest, getCurrentUser } from '../api/auth';
-import { connectSocket, disconnectSocket } from '../api/socket';
-import type { User, LoginCredentials, RegisterData } from '../api/types';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { getCurrentUser, login as loginRequest, register as registerRequest } from '../api/auth';
+import { connectSocket } from '../api/socket';
+import type { LoginCredentials, RegisterData, User } from '../api/types';
+import { authStorage } from '../auth/authStorage';
+import {
+  endSession,
+  markAuthenticated,
+  onSessionCleared,
+  persistAuthResponse,
+  refreshSession,
+} from '../auth/session';
+import { welcomeStorage } from '../auth/welcomeStorage';
+
+export type AuthStatus = 'initializing' | 'authenticated' | 'unauthenticated';
 
 interface AuthContextValue {
   user: User | null;
+  status: AuthStatus;
   loading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>('initializing');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
+    let cancelled = false;
+
+    const unsubscribe = onSessionCleared(() => {
+      setUser(null);
+      setStatus('unauthenticated');
+    });
+
+    async function bootstrap(): Promise<void> {
+      try {
+        let accessToken = authStorage.getAccessToken();
+        if (!accessToken && authStorage.getRefreshToken()) {
+          accessToken = await refreshSession();
+        }
+
+        if (!accessToken) {
+          if (!cancelled) setStatus('unauthenticated');
+          return;
+        }
+
+        const currentUser = await getCurrentUser();
+        if (cancelled) return;
+
+        welcomeStorage.consumeArm(currentUser.id);
+        setUser(currentUser);
+        connectSocket(accessToken);
+        markAuthenticated();
+        setStatus('authenticated');
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+          setStatus('unauthenticated');
+        }
+      }
     }
 
-    getCurrentUser()
-      .then((currentUser) => {
-        setUser(currentUser);
-        connectSocket(token);
-      })
-      .catch(() => localStorage.removeItem('token'))
-      .finally(() => setLoading(false));
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   async function login(credentials: LoginCredentials): Promise<void> {
-    const { token } = await loginRequest(credentials);
-    localStorage.setItem('token', token);
+    const session = await loginRequest(credentials);
+    persistAuthResponse(session);
     const currentUser = await getCurrentUser();
+    welcomeStorage.consumeArm(currentUser.id);
     setUser(currentUser);
-    connectSocket(token);
+    connectSocket(session.accessToken);
+    setStatus('authenticated');
   }
 
   async function register(data: RegisterData): Promise<void> {
-    const { token } = await registerRequest(data);
-    localStorage.setItem('token', token);
+    const session = await registerRequest(data);
+    persistAuthResponse(session);
+    welcomeStorage.armForNextAuthenticatedUser();
+    const currentUser = await getCurrentUser();
+    welcomeStorage.consumeArm(currentUser.id);
+    setUser(currentUser);
+    connectSocket(session.accessToken);
+    setStatus('authenticated');
+  }
+
+  async function logout(): Promise<void> {
+    await endSession();
+    setUser(null);
+    setStatus('unauthenticated');
+  }
+
+  const reloadUser = useCallback(async (): Promise<void> => {
     const currentUser = await getCurrentUser();
     setUser(currentUser);
-    connectSocket(token);
-  }
-
-  function logout(): void {
-    localStorage.removeItem('token');
-    disconnectSocket();
-    setUser(null);
-  }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        status,
+        loading: status === 'initializing',
+        login,
+        register,
+        logout,
+        reloadUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
