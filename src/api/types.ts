@@ -124,10 +124,18 @@ export interface SupportSummary {
   supportedByCurrentUser: boolean;
 }
 
+export type NotificationType =
+  | 'NEW_FOLLOWER'
+  | 'NEW_COMMENT'
+  | 'NEW_SUPPORT'
+  | 'NEW_STATUS_REACTION'
+  | 'FOLLOW_REQUEST_RECEIVED'
+  | 'FOLLOW_REQUEST_ACCEPTED';
+
 export interface Notification {
   id: string;
   actor: UserSummary;
-  type: 'NEW_FOLLOWER' | 'NEW_COMMENT' | 'NEW_SUPPORT'| 'NEW_STATUS_REACTION';
+  type: NotificationType;
   postId: string | null;
   read: boolean;
   createdAt: string;
