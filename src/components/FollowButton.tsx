@@ -11,6 +11,7 @@ export default function FollowButton({
   followVariant = 'soft',
   size = 'sm',
   fullWidth = false,
+  requested = false,
   className,
 }: {
   userId: string;
@@ -19,6 +20,7 @@ export default function FollowButton({
   followVariant?: 'soft' | 'presence';
   size?: 'sm' | 'md';
   fullWidth?: boolean;
+  requested?: boolean;
   className?: string;
 }) {
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
@@ -41,6 +43,16 @@ export default function FollowButton({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (requested) {
+    return (
+      <div className={cn('inline-flex flex-col gap-1', fullWidth ? 'w-full items-stretch' : 'items-end', className)}>
+        <Button type="button" size={size} fullWidth={fullWidth} variant="outline" disabled aria-disabled="true">
+          Solicitud enviada
+        </Button>
+      </div>
+    );
   }
 
   return (

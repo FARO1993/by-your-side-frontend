@@ -105,12 +105,17 @@ export interface PublicUserProfile {
   followedByCurrentUser: boolean;
 }
 
+export type ProfileVisibility = 'PUBLIC' | 'PRIVATE';
+export type DiscoverFollowState = 'NONE' | 'REQUESTED' | 'FOLLOWING';
+
 export interface DiscoverUser {
   id: string;
   username: string;
   displayName: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  profileVisibility: ProfileVisibility;
+  followState: DiscoverFollowState;
 }
 
 export interface SupportSummary {
