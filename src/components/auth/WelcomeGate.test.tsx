@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { armAuthTransition } from './authTransition';
 import type { User } from '../../api/types';
 import { welcomeStorage } from '../../auth/welcomeStorage';
 
@@ -171,6 +172,33 @@ describe('WelcomeGate', () => {
     expect(markSeen).not.toHaveBeenCalled();
     expect(screen.queryByRole('heading', { name: /Hola de nuevo/ })).not.toBeInTheDocument();
     expect(welcomeStorage.hasSeen('user-a')).toBe(true);
+  });
+
+  it('holds the welcome until the auth transition finishes', async () => {
+    vi.useFakeTimers();
+    try {
+      armAuthTransition();
+      auth.current.status = 'authenticated';
+      auth.current.user = person('user-a');
+      welcomeStorage.armForNextAuthenticatedUser();
+      welcomeStorage.consumeArm('user-a');
+
+      render(
+        <MemoryRouter initialEntries={['/login']}>
+          <WelcomeGate />
+        </MemoryRouter>,
+      );
+
+      expect(screen.queryByRole('heading', { name: /Bienvenido a ByYourSide/ })).not.toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+
+      expect(screen.getByRole('heading', { name: /Bienvenido a ByYourSide, Ana/ })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('uses the empty-name fallback when displayName is missing', () => {

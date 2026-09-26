@@ -1,121 +1,127 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Mail } from 'lucide-react';
 import { loginErrorMessage } from '../auth/apiError';
 import { consumeAuthNotice } from '../auth/session';
 import { useAuth } from '../context/AuthContext';
+import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthStatusMessage } from '../components/auth/AuthScaffold';
-import { Button, PresenceGlyph, TextField } from '../components/byourside/ui';
-import { Logo } from '../components/byourside/logo';
-
-function WelcomePanel() {
-  return (
-    <div className="hidden flex-col justify-between bg-gradient-to-br from-presence-soft via-cream to-listening-soft p-10 lg:flex">
-      <Logo wordmark />
-      <div>
-        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-card/70 text-presence-strong">
-          <PresenceGlyph className="h-4 w-6" />
-        </div>
-        <h2 className="font-serif text-3xl text-pretty">No tenés que atravesarlo solo.</h2>
-        <p className="mt-3 max-w-sm text-sm leading-relaxed text-foreground/80">
-          ByYourSide es un lugar tranquilo para compartir cómo estás y encontrar a alguien que te
-          acompañe. Sin apuros, sin juicios. Solo presencia.
-        </p>
-      </div>
-      <div className="flex gap-6 text-sm">
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2 rounded-full bg-presence" /> Presencia
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2 rounded-full bg-listening" /> Escucha
-        </span>
-      </div>
-    </div>
-  );
-}
+import { PasswordField } from '../components/auth/PasswordField';
+import { armAuthTransition, disarmAuthTransition } from '../components/auth/authTransition';
+import { emailFieldError, loginPasswordError } from '../components/auth/authValidation';
+import { Button, TextField } from '../components/byourside/ui';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [notice] = useState(() => consumeAuthNotice());
-  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const lock = useRef(false);
   const { login } = useAuth();
+  const busy = phase !== 'idle';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setSubmitting(true);
+    if (lock.current) return;
+
+    const emailError = emailFieldError(email);
+    const passwordError = loginPasswordError(password);
+    setFieldErrors({
+      email: emailError ?? undefined,
+      password: passwordError ?? undefined,
+    });
+    setFormError(null);
+    if (emailError || passwordError) return;
+
+    lock.current = true;
+    setPhase('submitting');
+    armAuthTransition();
+    let succeeded = false;
     try {
-      await login({ email, password });
+      await login({ email: email.trim(), password });
+      succeeded = true;
+      setPhase('success');
     } catch (err) {
-      setError(loginErrorMessage(err));
+      setFormError(loginErrorMessage(err));
+      setFieldErrors({});
     } finally {
-      setSubmitting(false);
+      if (!succeeded) {
+        disarmAuthTransition();
+        lock.current = false;
+        setPhase('idle');
+      }
     }
   }
 
+  const submitLabel = phase === 'success' ? 'Listo' : phase === 'submitting' ? 'Entrando…' : 'Ingresar';
+
   return (
-    <div className="min-h-dvh bg-background">
-      <div className="mx-auto grid min-h-dvh max-w-5xl grid-cols-1 lg:grid-cols-2">
-        <WelcomePanel />
-        <div className="flex items-center justify-center px-4 py-10">
-          <div className="w-full max-w-sm">
-            <div className="mb-8 lg:hidden">
-              <Logo wordmark />
-            </div>
-            <h1 className="font-serif text-2xl sm:text-3xl">Qué bueno verte de nuevo</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Ingresá para reencontrarte con quienes te acompañan.
-            </p>
-            {notice ? (
-              <div className="mt-6">
-                <AuthStatusMessage>{notice}</AuthStatusMessage>
-              </div>
-            ) : null}
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <TextField
-                label="Correo electrónico"
-                type="email"
-                placeholder="vos@ejemplo.com"
-                icon={<Mail className="size-4" />}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                disabled={submitting}
-              />
-              <TextField
-                label="Contraseña"
-                placeholder="Tu contraseña"
-                type="password"
-                icon={<Lock className="size-4" />}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                disabled={submitting}
-                error={error ?? undefined}
-              />
-              <Link to="/forgot-password" className="text-sm text-listening-strong hover:underline">
-                ¿Olvidaste tu contraseña?
-              </Link>
-              <Button type="submit" fullWidth loading={submitting}>
-                Ingresar
-              </Button>
-            </form>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              ¿Todavía no tenés cuenta?{' '}
-              <Link to="/register" className="font-semibold text-presence hover:underline">
-                Unite
-              </Link>
-            </p>
-            <p className="mt-3 text-center text-sm">
-              <Link to="/help" className="font-medium text-listening-strong hover:underline">
-                ¿Necesitás ayuda ahora?
-              </Link>
-            </p>
-          </div>
+    <AuthLayout
+      variant="login"
+      title="Qué bueno verte de nuevo"
+      subtitle="Ingresá para reencontrarte con quienes te acompañan."
+      leaving={phase === 'success'}
+    >
+      {notice ? (
+        <div className="mb-4">
+          <AuthStatusMessage>{notice}</AuthStatusMessage>
         </div>
-      </div>
-    </div>
+      ) : null}
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={busy}>
+        <TextField
+          label="Correo electrónico"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="vos@ejemplo.com"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setFieldErrors((current) => ({ ...current, email: undefined }));
+            setFormError(null);
+          }}
+          required
+          disabled={busy}
+          error={fieldErrors.email}
+        />
+        <PasswordField
+          label="Contraseña"
+          autoComplete="current-password"
+          placeholder="Tu contraseña"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setFieldErrors((current) => ({ ...current, password: undefined }));
+            setFormError(null);
+          }}
+          required
+          disabled={busy}
+          error={fieldErrors.password}
+        />
+        <Link to="/forgot-password" className="inline-flex py-1 text-sm text-listening-strong hover:underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
+        {formError ? (
+          <p role="alert" className="rounded-xl bg-presence-soft px-3 py-2 text-sm text-presence-strong">
+            {formError}
+          </p>
+        ) : null}
+        <Button type="submit" fullWidth disabled={busy}>
+          {submitLabel}
+        </Button>
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        ¿Todavía no tenés cuenta?{' '}
+        <Link to="/register" className="font-semibold text-presence hover:underline">
+          Unite
+        </Link>
+      </p>
+      <p className="mt-3 text-center text-sm">
+        <Link to="/help" className="font-medium text-listening-strong hover:underline">
+          ¿Necesitás ayuda ahora?
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
