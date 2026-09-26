@@ -1,13 +1,8 @@
 import { discoverUsers } from '../api/users';
 import type { DiscoverUser, Page } from '../api/types';
-import { getDiscoverTopics, searchDiscoverTopics, type DiscoverTopic } from '../mocks/discover';
 
 export async function getDiscoverPeople(page = 0, size = 20): Promise<Page<DiscoverUser>> {
   return discoverUsers(page, size);
-}
-
-export function getTopics(query?: string): DiscoverTopic[] {
-  return query ? searchDiscoverTopics(query) : getDiscoverTopics();
 }
 
 export function filterPeople(people: DiscoverUser[], query: string): DiscoverUser[] {
