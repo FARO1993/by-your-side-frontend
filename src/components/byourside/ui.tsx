@@ -102,6 +102,7 @@ export function TextField({
   hint,
   error,
   icon,
+  suffix,
   id,
   className,
   disabled,
@@ -111,6 +112,7 @@ export function TextField({
   hint?: string;
   error?: string;
   icon?: ReactNode;
+  suffix?: ReactNode;
 }) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
@@ -137,11 +139,15 @@ export function TextField({
           className={cn(
             'min-h-11 w-full rounded-xl border border-input bg-card px-3.5 text-[0.975rem] text-foreground placeholder:text-muted-foreground focus:border-presence focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
             icon ? 'pl-10' : undefined,
+            suffix ? 'pr-12' : undefined,
             error ? 'border-destructive' : undefined,
             className,
           )}
           {...props}
         />
+        {suffix ? (
+          <span className="absolute inset-y-0 right-1 flex items-center">{suffix}</span>
+        ) : null}
       </div>
       {error ? (
         <p id={errorId} className="text-xs font-medium text-destructive">
