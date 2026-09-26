@@ -1,11 +1,11 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Lock } from 'lucide-react';
 import { applyPasswordReset } from '../auth/accountActions';
 import { classifyResetError, type ResetFailure } from '../auth/apiError';
 import { confirmPasswordError, passwordLengthError } from '../auth/passwords';
-import { AuthScaffold } from '../components/auth/AuthScaffold';
-import { Button, TextField } from '../components/byourside/ui';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { PasswordField } from '../components/auth/PasswordField';
+import { Button } from '../components/byourside/ui';
 
 const COPY: Record<ResetFailure, string> = {
   invalid: 'Este enlace no es válido. Pedí uno nuevo.',
@@ -27,6 +27,7 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     setFieldError(null);
     setFormError(null);
 
@@ -54,48 +55,57 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthScaffold
+    <AuthLayout
+      variant="reset"
       title="Nueva contraseña"
       subtitle="Elegí una contraseña de al menos 8 caracteres."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <TextField
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={submitting}>
+        <PasswordField
           label="Nueva contraseña"
-          type="password"
           autoComplete="new-password"
           placeholder="Nueva contraseña"
-          icon={<Lock className="size-4" />}
+          showLabel="Mostrar nueva contraseña"
+          hideLabel="Ocultar nueva contraseña"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setFieldError(null);
+            setFormError(null);
+          }}
           required
           minLength={8}
           disabled={submitting}
         />
-        <TextField
+        <PasswordField
           label="Confirmá la contraseña"
-          type="password"
           autoComplete="new-password"
           placeholder="Repetí la contraseña"
-          icon={<Lock className="size-4" />}
+          showLabel="Mostrar confirmación de contraseña"
+          hideLabel="Ocultar confirmación de contraseña"
           value={confirmation}
-          onChange={(event) => setConfirmation(event.target.value)}
+          onChange={(event) => {
+            setConfirmation(event.target.value);
+            setFieldError(null);
+            setFormError(null);
+          }}
           required
           minLength={8}
           disabled={submitting}
           error={fieldError ?? undefined}
         />
         {formError ? (
-          <p role="alert" className="text-sm text-destructive">
+          <div role="alert" className="rounded-xl bg-presence-soft px-3 py-2 text-sm text-presence-strong">
             {formError}{' '}
-            <Link to="/forgot-password" className="font-semibold text-listening-strong hover:underline">
+            <Link to="/forgot-password" className="font-semibold underline">
               Pedir un enlace nuevo
             </Link>
-          </p>
+          </div>
         ) : null}
-        <Button type="submit" fullWidth loading={submitting}>
-          Restablecer contraseña
+        <Button type="submit" fullWidth disabled={submitting}>
+          {submitting ? 'Restableciendo…' : 'Restablecer contraseña'}
         </Button>
       </form>
-    </AuthScaffold>
+    </AuthLayout>
   );
 }

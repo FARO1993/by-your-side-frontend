@@ -4,7 +4,8 @@ import { verifyEmail } from '../api/auth';
 import { classifyVerifyError, type VerifyFailure } from '../auth/apiError';
 import { useAuth } from '../context/AuthContext';
 import { Button, Spinner } from '../components/byourside/ui';
-import { AuthScaffold, AuthStatusMessage } from '../components/auth/AuthScaffold';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { AuthStatusMessage } from '../components/auth/AuthScaffold';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 
 type VerifyState = 'verifying' | 'success' | 'missing' | VerifyFailure;
@@ -78,10 +79,7 @@ export default function VerifyEmailPage() {
   }, [reloadUser, state, status]);
 
   return (
-    <AuthScaffold
-      title="Verificá tu correo"
-      subtitle="Así sabemos que este espacio es tuyo."
-    >
+    <AuthLayout variant="verify" title="Verificá tu correo" subtitle="Así sabemos que este espacio es tuyo.">
       {state === 'verifying' ? (
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Spinner label="Verificando correo" />
@@ -90,23 +88,23 @@ export default function VerifyEmailPage() {
       ) : null}
 
       {state === 'success' ? (
-        <>
+        <div className="space-y-4">
           <AuthStatusMessage>Tu correo quedó verificado.</AuthStatusMessage>
           <Button fullWidth onClick={() => navigate(user ? '/feed' : '/login')}>
             {user ? 'Ir al inicio' : 'Iniciar sesión'}
           </Button>
-        </>
+        </div>
       ) : null}
 
       {state !== 'verifying' && state !== 'success' ? (
-        <>
-          <div role="alert" className="rounded-xl border border-border/70 bg-card px-3 py-3 text-sm">
-            <p className="font-medium text-foreground">{COPY[state].title}</p>
-            <p className="mt-1 text-muted-foreground">{COPY[state].body}</p>
+        <div className="space-y-4">
+          <div role="alert" className="rounded-xl bg-presence-soft px-3 py-3 text-sm text-presence-strong">
+            <p className="font-medium">{COPY[state].title}</p>
+            <p className="mt-1">{COPY[state].body}</p>
           </div>
           <ResendVerificationForm initialEmail={user?.email ?? ''} />
-        </>
+        </div>
       ) : null}
-    </AuthScaffold>
+    </AuthLayout>
   );
 }

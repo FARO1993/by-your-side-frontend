@@ -167,7 +167,7 @@ test.describe('flujos de cuenta con API mockeada', () => {
     await page.goto('/forgot-password');
     await page.getByPlaceholder('vos@ejemplo.com').fill('nadie@example.com');
     await page.getByRole('button', { name: 'Enviar instrucciones' }).click();
-    await expect(page.getByText('Si existe una cuenta asociada, recibirás un email con instrucciones.')).toBeVisible();
+    await expect(page.getByText('Si existe una cuenta asociada a ese correo, te enviamos instrucciones para continuar.')).toBeVisible();
     await expect(page.getByText(/no existe/i)).toHaveCount(0);
   });
 
