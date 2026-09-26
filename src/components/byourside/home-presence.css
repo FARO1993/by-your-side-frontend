@@ -1,0 +1,134 @@
+.home-pulse-anchor {
+  scroll-margin-bottom: 7.5rem;
+}
+
+.home-checkin-swap {
+  animation: home-checkin-in 220ms var(--ease-calm);
+}
+
+@keyframes home-checkin-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.home-pulse-field {
+  overflow: visible;
+}
+
+.home-pulse-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 18s;
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  animation-iteration-count: infinite;
+}
+
+.home-pulse-drift-a {
+  animation-name: home-pulse-drift-a;
+}
+
+.home-pulse-drift-b {
+  animation-name: home-pulse-drift-b;
+  animation-duration: 22s;
+}
+
+.home-pulse-drift-c {
+  animation-name: home-pulse-drift-c;
+  animation-duration: 20s;
+  animation-delay: -6s;
+}
+
+.home-pulse-meet-left {
+  animation-name: home-pulse-meet-left;
+  animation-duration: 20s;
+}
+
+.home-pulse-meet-right {
+  animation-name: home-pulse-meet-right;
+  animation-duration: 20s;
+}
+
+.home-pulse-meet-left-late {
+  animation-name: home-pulse-meet-left;
+  animation-duration: 20s;
+  animation-delay: -10s;
+}
+
+.home-pulse-meet-right-late {
+  animation-name: home-pulse-meet-right;
+  animation-duration: 20s;
+  animation-delay: -10s;
+}
+
+@keyframes home-pulse-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(4px, -5px, 0);
+  }
+}
+
+@keyframes home-pulse-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-5px, 3px, 0);
+  }
+}
+
+@keyframes home-pulse-drift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(3px, 4px, 0);
+  }
+}
+
+@keyframes home-pulse-meet-left {
+  0%,
+  22%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%,
+  62% {
+    transform: translate3d(12px, 6px, 0);
+  }
+  80% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes home-pulse-meet-right {
+  0%,
+  22%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%,
+  62% {
+    transform: translate3d(-12px, -4px, 0);
+  }
+  80% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-checkin-swap,
+  .home-pulse-dot {
+    animation: none;
+  }
+}

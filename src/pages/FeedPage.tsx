@@ -1,24 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
+import { setAvailability } from '../api/availability';
 import { createPost, getFeed } from '../api/posts';
 import { getStatusFeed, setStatus } from '../api/statuses';
-import type { Post, Status, StatusMood } from '../api/types';
+import type { CompanionIntent, Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { Composer } from '../components/byourside/composer';
+import { HomePresencePulse } from '../components/byourside/home-presence-pulse';
 import { EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
 import { PostCardSkeleton } from '../components/byourside/post-skeleton';
 import PostCard from '../components/PostCard';
 import StatusCard from '../components/StatusCard';
 import SupportReminderCard from '../components/SupportReminderCard';
 import { Logo } from '../components/byourside/logo';
+import { greetingName } from '../lib/greetingName';
 
 export default function FeedPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const availabilityEpoch = useRef(0);
   const [posts, setPosts] = useState<Post[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [availabilityPending, setAvailabilityPending] = useState(false);
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -51,12 +60,47 @@ export default function FeedPage() {
     setStatuses((prev) => [status, ...prev.filter((item) => item.user.id !== status.user.id)]);
   }
 
-  const name = user?.displayName || user?.username || '';
+  function resetPulse() {
+    availabilityEpoch.current += 1;
+    setAvailabilityPending(false);
+    setAvailabilityMessage(null);
+    setAvailabilityError(null);
+  }
+
+  function seekCompany(intent: CompanionIntent | null) {
+    navigate('/companion', intent ? { state: { intent } } : undefined);
+  }
+
+  async function declareAvailability(intent: CompanionIntent | null) {
+    if (!intent) {
+      navigate('/companion');
+      return;
+    }
+    const epoch = availabilityEpoch.current;
+    setAvailabilityPending(true);
+    setAvailabilityError(null);
+    setAvailabilityMessage(null);
+    try {
+      await setAvailability(intent);
+      if (epoch !== availabilityEpoch.current) return;
+      setAvailabilityMessage(intent === 'TALK' ? 'Quedaste disponible para charlar.' : 'Quedaste disponible para distraernos.');
+    } catch {
+      if (epoch !== availabilityEpoch.current) return;
+      setAvailabilityError('No pudimos guardar tu disponibilidad. Podés intentarlo en Modo compañía.');
+    } finally {
+      if (epoch === availabilityEpoch.current) setAvailabilityPending(false);
+    }
+  }
+
+  const fullName = user?.displayName?.trim() || user?.username || '';
+  const greeting = greetingName(user?.displayName, user?.username);
 
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="font-serif text-2xl text-balance sm:text-3xl">Hola, {name}</h1>
+        <h1 className="truncate font-serif text-2xl sm:text-3xl" title={fullName ? `Hola, ${fullName}` : undefined}>
+          {greeting ? `Hola, ${greeting}.` : 'Hola.'}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">Estamos acá, a tu ritmo.</p>
       </header>
 
@@ -64,13 +108,22 @@ export default function FeedPage() {
 
       {user ? (
         <Composer
-          authorName={name}
+          authorName={fullName}
           avatarUrl={user.avatarUrl}
           onSubmit={handlePost}
           onMood={handleMood}
           submitting={submitting}
         />
       ) : null}
+
+      <HomePresencePulse
+        onSeekCompany={seekCompany}
+        onDeclareAvailability={(intent) => void declareAvailability(intent)}
+        onReset={resetPulse}
+        availabilityPending={availabilityPending}
+        availabilityMessage={availabilityMessage}
+        availabilityError={availabilityError}
+      />
 
       <div className="flex items-end justify-between">
         <SectionTitle>Cerca tuyo</SectionTitle>

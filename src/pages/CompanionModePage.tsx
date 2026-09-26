@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Ear, Heart, ShieldCheck } from 'lucide-react';
 import {
   cancelAvailability,
@@ -10,6 +10,7 @@ import {
 import { getOrCreateConversation, sendMessage } from '../api/chat';
 import type { Availability, CompanionIntent } from '../api/types';
 import Avatar from '../components/Avatar';
+import { readCompanionIntent } from '../components/byourside/check-in';
 import { Button, Card, EmptyState, SectionTitle, Spinner } from '../components/byourside/ui';
 
 const intents: { value: CompanionIntent; label: string }[] = [
@@ -23,11 +24,12 @@ const intents: { value: CompanionIntent; label: string }[] = [
 
 export default function CompanionModePage() {
   const navigate = useNavigate();
+  const requestedIntent = readCompanionIntent(useLocation().state);
   const [mine, setMine] = useState<Availability | null>(null);
-  const [selected, setSelected] = useState<CompanionIntent | null>(null);
+  const [selected, setSelected] = useState<CompanionIntent | null>(requestedIntent);
   const [available, setAvailable] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingList, setLoadingList] = useState(false);
+  const [loadingList, setLoadingList] = useState(Boolean(requestedIntent));
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sending, setSending] = useState<Record<string, boolean>>({});
   const [sendError, setSendError] = useState<Record<string, string>>({});
@@ -49,6 +51,21 @@ export default function CompanionModePage() {
   useEffect(() => {
     getMyAvailability().then(setMine).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!requestedIntent) return undefined;
+    let cancelled = false;
+    listAvailable(requestedIntent)
+      .then((items) => {
+        if (!cancelled) setAvailable(items);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingList(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedIntent]);
 
   async function toggle(intent?: CompanionIntent) {
     if (mine) {
