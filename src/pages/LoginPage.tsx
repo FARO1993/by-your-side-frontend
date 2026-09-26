@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 import { loginErrorMessage } from '../auth/apiError';
 import { consumeAuthNotice } from '../auth/session';
@@ -41,7 +41,6 @@ export default function LoginPage() {
   const [notice] = useState(() => consumeAuthNotice());
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +48,6 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login({ email, password });
-      navigate('/feed');
     } catch (err) {
       setError(loginErrorMessage(err));
     } finally {

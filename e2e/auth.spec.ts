@@ -46,9 +46,12 @@ test.describe('Registro y login', () => {
 
     await page.getByPlaceholder('vos@ejemplo.com').fill(`${username}@example.com`);
     await page.getByPlaceholder('Tu contraseña').fill('secretpass123');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
-    await expect(page).toHaveURL('/feed');
+    await expect(page.getByRole('heading', { name: /Hola de nuevo/ })).toBeVisible();
+    await expect(page.getByText('Estamos acá. 💜')).toBeVisible();
     await expect(page.getByRole('heading', { name: /Bienvenido a ByYourSide/ })).toHaveCount(0);
+    await expect(page).toHaveURL('/feed');
   });
 });

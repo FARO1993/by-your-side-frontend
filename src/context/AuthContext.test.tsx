@@ -18,6 +18,7 @@ vi.mock('../api/auth', () => ({
 }));
 
 import { getCurrentUser, login, register } from '../api/auth';
+import * as sessionModule from '../auth/session';
 import { AuthProvider, useAuth } from './AuthContext';
 
 const loginMock = vi.mocked(login);
@@ -53,11 +54,15 @@ function Probe() {
   return (
     <div>
       <span>{auth.status}</span>
+      <span>{auth.showReturningWelcome ? 'returning-welcome' : 'no-returning'}</span>
       <button type="button" onClick={() => void auth.register({ email: 'ana@example.com', password: 'secretpass', displayName: 'Ana' })}>
         Registrar
       </button>
       <button type="button" onClick={() => void auth.login({ email: 'ana@example.com', password: 'secretpass' })}>
         Ingresar
+      </button>
+      <button type="button" onClick={() => void auth.logout()}>
+        Salir
       </button>
     </div>
   );
@@ -68,6 +73,7 @@ describe('AuthContext session', () => {
     loginMock.mockReset();
     registerMock.mockReset();
     currentUserMock.mockReset();
+    authStorage.clear();
   });
 
   it('register stores access and refresh tokens and arms the welcome', async () => {
@@ -88,9 +94,63 @@ describe('AuthContext session', () => {
     expect(authStorage.getRefreshToken()).toBe('refresh-1');
     expect(localStorage.getItem('token')).toBeNull();
     expect(welcomeStorage.shouldShow('user-a')).toBe(true);
+    expect(screen.getByText('no-returning')).toBeInTheDocument();
   });
 
-  it('login stores the session and does not show the welcome', async () => {
+  it('login stores the session and arms returning welcome without welcomeSeen', async () => {
+    loginMock.mockResolvedValue(authResponse);
+    currentUserMock.mockResolvedValue(user('user-b'));
+    welcomeStorage.markSeen('user-b');
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('unauthenticated')).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+
+    await waitFor(() => expect(screen.getByText('returning-welcome')).toBeInTheDocument());
+    expect(authStorage.getRefreshToken()).toBe('refresh-1');
+    expect(welcomeStorage.shouldShow('user-b')).toBe(false);
+    expect(welcomeStorage.hasSeen('user-b')).toBe(true);
+  });
+
+  it('reload with an existing session does not arm returning welcome', async () => {
+    authStorage.setSession({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 });
+    currentUserMock.mockResolvedValue(user('user-reload'));
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('authenticated')).toBeInTheDocument());
+    expect(screen.getByText('no-returning')).toBeInTheDocument();
+    expect(welcomeStorage.hasSeen('user-reload')).toBe(false);
+  });
+
+  it('a silent refresh does not arm returning welcome', async () => {
+    const refreshSpy = vi.spyOn(sessionModule, 'refreshSession').mockResolvedValue('access-restored');
+    localStorage.setItem('byyourside.refreshToken', 'refresh-kept');
+    currentUserMock.mockResolvedValue(user('user-refresh'));
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('authenticated')).toBeInTheDocument());
+    expect(refreshSpy).toHaveBeenCalled();
+    expect(screen.getByText('no-returning')).toBeInTheDocument();
+    refreshSpy.mockRestore();
+  });
+
+  it('logout clears returning welcome and the next login shows it again', async () => {
+    vi.spyOn(sessionModule, 'endSession').mockResolvedValue(undefined);
     loginMock.mockResolvedValue(authResponse);
     currentUserMock.mockResolvedValue(user('user-b'));
 
@@ -102,9 +162,14 @@ describe('AuthContext session', () => {
 
     await waitFor(() => expect(screen.getByText('unauthenticated')).toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+    await waitFor(() => expect(screen.getByText('returning-welcome')).toBeInTheDocument());
 
-    await waitFor(() => expect(screen.getByText('authenticated')).toBeInTheDocument());
-    expect(authStorage.getRefreshToken()).toBe('refresh-1');
-    expect(welcomeStorage.shouldShow('user-b')).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Salir' }));
+    await waitFor(() => expect(screen.getByText('no-returning')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+    await waitFor(() => expect(screen.getByText('returning-welcome')).toBeInTheDocument());
+    expect(welcomeStorage.hasSeen('user-b')).toBe(false);
+    vi.mocked(sessionModule.endSession).mockRestore();
   });
 });
