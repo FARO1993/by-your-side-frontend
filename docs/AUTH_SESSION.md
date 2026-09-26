@@ -74,8 +74,17 @@ El componente `AnimatedWelcome` ya estaba en `develop` (merge de
 `feature/animated-welcome`). No se rehízo. La figura coral es presencia y la
 teal es escucha; el estado final coincide con el logo.
 
-Se muestra una sola vez, después de un registro exitoso, como overlay. No
-aparece en un login normal, en un reload ni al navegar el resto de la app.
+Hay dos variantes, las dos como overlay de `WelcomeGate`:
+
+- `new-user`, una sola vez después de un registro exitoso. Usa
+  `welcomePending` / `welcomeSeen`.
+- `returning-user`, en cada login manual exitoso desde `/login`. El estado es
+  solo de memoria (`showReturningWelcome`). No usa `welcomeSeen`, no se
+  escribe en storage y no aparece en un reload, en el bootstrap ni en un
+  refresh silencioso.
+
+Al terminar, `returning-user` navega a `/feed`. El registro sigue yendo al
+feed con `new-user` encima.
 
 Como el backend no expone un campo de onboarding, la marca es temporal y por
 usuario:
@@ -87,9 +96,10 @@ El `userId` sale de `GET /api/users/me`. `welcomeSeen` se escribe solo cuando
 la animación termina (`Empecemos`) o cuando el fallback «Continuar» se usa
 porque la pantalla falló. Cerrar la pestaña a la mitad no la marca como vista.
 
-`prefers-reduced-motion: reduce` salta el movimiento y muestra el estado final
-estático, con el botón para entrar. La vista `/dev/welcome` sigue existiendo
-solo en desarrollo para revisar la animación.
+`prefers-reduced-motion: reduce` salta el movimiento. En `new-user` muestra el
+estado final estático, con el botón para entrar. En `returning-user` completa
+sola y no agrega un botón. La vista `/dev/welcome` sigue existiendo solo en
+desarrollo para revisar la animación.
 
 ## Correo y contraseña
 

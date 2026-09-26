@@ -137,18 +137,29 @@ test.describe('flujos de cuenta con API mockeada', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Bienvenido a ByYourSide/ })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Hola de nuevo/ })).toHaveCount(0);
   });
 
-  test('login entra al feed sin la bienvenida', async ({ page }) => {
+  test('login muestra la bienvenida de regreso y después entra al feed', async ({ page }) => {
     await installApi(page);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/login');
     await page.getByPlaceholder('vos@ejemplo.com').fill('ana@example.com');
     await page.getByPlaceholder('Tu contraseña').fill('secretpass');
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
+    await expect(page.getByRole('heading', { name: 'Hola de nuevo, Ana.' })).toBeVisible();
+    await expect(page.getByText('Estamos acá. 💜')).toBeVisible();
+    await expect(page.locator('[data-variant="returning-user"]')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Bienvenido a ByYourSide/ })).toHaveCount(0);
+
+    await expect(page.getByRole('heading', { name: 'Hola de nuevo, Ana.' })).toHaveCount(0);
     await expect(page).toHaveURL('/feed');
     await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Bienvenido a ByYourSide/ })).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Hola de nuevo/ })).toHaveCount(0);
   });
 
   test('forgot password muestra una respuesta genérica', async ({ page }) => {
@@ -239,6 +250,7 @@ test.describe('flujos de cuenta con API mockeada', () => {
 
     await page.goto('/feed');
     await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Hola de nuevo/ })).toHaveCount(0);
     expect(refreshCalls).toBe(1);
   });
 

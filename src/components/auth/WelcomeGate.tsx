@@ -1,5 +1,5 @@
 import { Component, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatedWelcome } from '../byourside/animated-welcome';
 import { Button } from '../byourside/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -34,25 +34,42 @@ class WelcomeErrorBoundary extends Component<{ onContinue: () => void; children:
 }
 
 export function WelcomeGate() {
-  const { user, status } = useAuth();
+  const { user, status, showReturningWelcome, clearReturningWelcome } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
 
-  if (status !== 'authenticated' || !user || dismissedFor === user.id) return null;
+  if (status !== 'authenticated' || !user) return null;
   if (location.pathname.startsWith('/dev/welcome')) return null;
-  if (!welcomeStorage.shouldShow(user.id)) return null;
 
-  function finish() {
+  const showNewUser = welcomeStorage.shouldShow(user.id) && dismissedFor !== user.id;
+  const showReturning = showReturningWelcome && !showNewUser;
+  if (!showNewUser && !showReturning) return null;
+
+  function finishNewUser() {
     if (!user) return;
     welcomeStorage.markSeen(user.id);
     setDismissedFor(user.id);
   }
 
-  const name = user.displayName?.trim() || user.username;
+  function finishReturning() {
+    clearReturningWelcome();
+    navigate('/feed', { replace: true });
+  }
+
+  const finish = showReturning ? finishReturning : finishNewUser;
+  const name = showReturning
+    ? (user.displayName?.trim() ?? '')
+    : (user.displayName?.trim() || user.username);
 
   return (
     <WelcomeErrorBoundary onContinue={finish}>
-      <AnimatedWelcome key={user.id} variant="new-user" userName={name} onComplete={finish} />
+      <AnimatedWelcome
+        key={`${showReturning ? 'returning' : 'new'}-${user.id}`}
+        variant={showReturning ? 'returning-user' : 'new-user'}
+        userName={name}
+        onComplete={finish}
+      />
     </WelcomeErrorBoundary>
   );
 }

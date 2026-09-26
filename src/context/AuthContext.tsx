@@ -18,10 +18,12 @@ interface AuthContextValue {
   user: User | null;
   status: AuthStatus;
   loading: boolean;
+  showReturningWelcome: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
+  clearReturningWelcome: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,6 +31,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>('initializing');
+  const [showReturningWelcome, setShowReturningWelcome] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSessionCleared(() => {
       setUser(null);
       setStatus('unauthenticated');
+      setShowReturningWelcome(false);
     });
 
     async function bootstrap(): Promise<void> {
@@ -82,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(currentUser);
     connectSocket(session.accessToken);
     setStatus('authenticated');
+    if (!welcomeStorage.shouldShow(currentUser.id)) {
+      setShowReturningWelcome(true);
+    }
   }
 
   async function register(data: RegisterData): Promise<void> {
@@ -99,7 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await endSession();
     setUser(null);
     setStatus('unauthenticated');
+    setShowReturningWelcome(false);
   }
+
+  const clearReturningWelcome = useCallback(() => {
+    setShowReturningWelcome(false);
+  }, []);
 
   const reloadUser = useCallback(async (): Promise<void> => {
     const currentUser = await getCurrentUser();
@@ -112,10 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         status,
         loading: status === 'initializing',
+        showReturningWelcome,
         login,
         register,
         logout,
         reloadUser,
+        clearReturningWelcome,
       }}
     >
       {children}
