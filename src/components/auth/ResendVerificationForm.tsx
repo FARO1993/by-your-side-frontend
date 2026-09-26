@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { Mail } from 'lucide-react';
 import { resendVerification } from '../../api/auth';
 import { OFFLINE_MESSAGE, readApiError } from '../../auth/apiError';
 import { Button, TextField } from '../byourside/ui';
@@ -46,7 +45,6 @@ export function ResendVerificationForm({
         type="email"
         autoComplete="email"
         placeholder="vos@ejemplo.com"
-        icon={<Mail className="size-4" />}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required

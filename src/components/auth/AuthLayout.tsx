@@ -12,6 +12,18 @@ const COPY = {
     title: 'Hay lugar para vos acá.',
     body: 'Llegá como sos. Escuchá cuando puedas y pedí compañía cuando la necesites.',
   },
+  forgot: {
+    title: 'No tenés que resolverlo solo.',
+    body: 'Te ayudamos a volver a entrar. Si hay una cuenta asociada a tu correo, te enviaremos los próximos pasos.',
+  },
+  reset: {
+    title: 'Volvé a entrar con calma.',
+    body: 'Elegí una contraseña nueva. Cuando esté lista, vas a poder ingresar de nuevo.',
+  },
+  verify: {
+    title: 'Este espacio es tuyo.',
+    body: 'Confirmamos tu correo para que puedas volver a entrar, sin apuros.',
+  },
 } as const;
 
 export function AuthLayout({
@@ -21,7 +33,7 @@ export function AuthLayout({
   leaving = false,
   children,
 }: {
-  variant: 'login' | 'register';
+  variant: keyof typeof COPY;
   title: string;
   subtitle: string;
   leaving?: boolean;

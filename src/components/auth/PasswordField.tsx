@@ -2,12 +2,19 @@ import { useId, useState, type ComponentPropsWithoutRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { TextField } from '../byourside/ui';
 
-type PasswordFieldProps = Omit<ComponentPropsWithoutRef<typeof TextField>, 'type' | 'suffix' | 'id'>;
+type PasswordFieldProps = Omit<ComponentPropsWithoutRef<typeof TextField>, 'type' | 'suffix' | 'id'> & {
+  showLabel?: string;
+  hideLabel?: string;
+};
 
-export function PasswordField(props: PasswordFieldProps) {
+export function PasswordField({
+  showLabel = 'Mostrar contraseña',
+  hideLabel = 'Ocultar contraseña',
+  ...props
+}: PasswordFieldProps) {
   const id = useId();
   const [visible, setVisible] = useState(false);
-  const label = visible ? 'Ocultar contraseña' : 'Mostrar contraseña';
+  const label = visible ? hideLabel : showLabel;
 
   return (
     <TextField
