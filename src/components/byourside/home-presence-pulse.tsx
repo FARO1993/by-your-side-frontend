@@ -1,11 +1,12 @@
 import { useId, useState } from 'react';
-import type { CompanionIntent } from '../../api/types';
+import type { CompanionNeed, CompanionOffering, NeedType, OfferingType } from '../../api/types';
 import { cn } from '../../lib/cn';
+import { formatCompanionUntil, NEED_LABEL, OFFERING_SELF_LABEL } from '../../lib/companion';
 import {
   COMPANY_NEEDS,
   OFFER_WAYS,
-  intentForCompanyNeed,
-  intentForOffer,
+  needTypeFor,
+  offeringTypeFor,
   type CompanyNeed,
   type OfferWay,
   type PulseMode,
@@ -18,17 +19,27 @@ const chipClass =
 export function HomePresencePulse({
   onSeekCompany,
   onDeclareAvailability,
+  onCancelNeed,
+  onCancelOffering,
   onReset,
-  availabilityPending = false,
-  availabilityMessage = null,
-  availabilityError = null,
+  activeNeed = null,
+  activeOffering = null,
+  needPending = false,
+  offeringPending = false,
+  needError = null,
+  offeringError = null,
 }: {
-  onSeekCompany: (intent: CompanionIntent | null) => void;
-  onDeclareAvailability: (intent: CompanionIntent | null) => void;
+  onSeekCompany: (type: NeedType) => Promise<void> | void;
+  onDeclareAvailability: (type: OfferingType) => Promise<void> | void;
+  onCancelNeed?: () => Promise<void> | void;
+  onCancelOffering?: () => Promise<void> | void;
   onReset?: () => void;
-  availabilityPending?: boolean;
-  availabilityMessage?: string | null;
-  availabilityError?: string | null;
+  activeNeed?: CompanionNeed | null;
+  activeOffering?: CompanionOffering | null;
+  needPending?: boolean;
+  offeringPending?: boolean;
+  needError?: string | null;
+  offeringError?: string | null;
 }) {
   const [mode, setMode] = useState<PulseMode>('idle');
 
@@ -47,8 +58,17 @@ export function HomePresencePulse({
             options={COMPANY_NEEDS}
             tone="presence"
             cta="Encontrar compañía"
+            pending={needPending}
+            error={needError}
             onChange={change}
-            onConfirm={(id) => onSeekCompany(intentForCompanyNeed(id))}
+            onConfirm={async (id) => {
+              try {
+                await onSeekCompany(needTypeFor(id));
+                setMode('idle');
+              } catch {
+                // The parent keeps the confirmed state and shows the error.
+              }
+            }}
           />
         ) : null}
         {mode === 'available' ? (
@@ -58,32 +78,72 @@ export function HomePresencePulse({
             options={OFFER_WAYS}
             tone="listening"
             cta="Confirmar disponibilidad"
-            pending={availabilityPending}
-            message={availabilityMessage}
-            error={availabilityError}
+            pending={offeringPending}
+            error={offeringError}
             onChange={change}
-            onConfirm={(id) => onDeclareAvailability(intentForOffer(id))}
+            onConfirm={async (id) => {
+              try {
+                await onDeclareAvailability(offeringTypeFor(id));
+                setMode('idle');
+              } catch {
+                // The parent keeps the confirmed state and shows the error.
+              }
+            }}
           />
         ) : null}
         {mode === 'idle' ? (
           <div>
             <PulseField />
             <p className="mx-auto max-w-xs text-center text-sm text-foreground">Hay personas por acá</p>
+            {activeNeed ? (
+              <ActiveDeclaration
+                title="Estás buscando compañía"
+                detail={NEED_LABEL[activeNeed.type]}
+                expiresAt={activeNeed.expiresAt}
+                pending={needPending}
+                onChange={() => setMode('seeking')}
+                onCancel={() => void onCancelNeed?.()}
+              />
+            ) : null}
+            {activeOffering ? (
+              <ActiveDeclaration
+                title="Estás disponible"
+                detail={OFFERING_SELF_LABEL[activeOffering.type]}
+                expiresAt={activeOffering.expiresAt}
+                pending={offeringPending}
+                onChange={() => setMode('available')}
+                onCancel={() => void onCancelOffering?.()}
+              />
+            ) : null}
+            {needError ? (
+              <p role="alert" className="mt-2 text-center text-sm text-destructive">
+                {needError}
+              </p>
+            ) : null}
+            {offeringError ? (
+              <p role="alert" className="mt-2 text-center text-sm text-destructive">
+                {offeringError}
+              </p>
+            ) : null}
             <div className="mt-2 flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMode('seeking')}
-                className="min-h-11 min-w-[9.5rem] flex-1 rounded-full bg-presence-soft px-3 text-sm font-semibold text-presence-strong sm:flex-none sm:px-4"
-              >
-                Necesito compañía
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('available')}
-                className="min-h-11 min-w-[9.5rem] flex-1 rounded-full bg-listening-soft px-3 text-sm font-semibold text-listening-strong sm:flex-none sm:px-4"
-              >
-                Estoy disponible
-              </button>
+              {activeNeed ? null : (
+                <button
+                  type="button"
+                  onClick={() => setMode('seeking')}
+                  className="min-h-11 min-w-[9.5rem] flex-1 rounded-full bg-presence-soft px-3 text-sm font-semibold text-presence-strong sm:flex-none sm:px-4"
+                >
+                  Necesito compañía
+                </button>
+              )}
+              {activeOffering ? null : (
+                <button
+                  type="button"
+                  onClick={() => setMode('available')}
+                  className="min-h-11 min-w-[9.5rem] flex-1 rounded-full bg-listening-soft px-3 text-sm font-semibold text-listening-strong sm:flex-none sm:px-4"
+                >
+                  Estoy disponible
+                </button>
+              )}
             </div>
           </div>
         ) : null}
@@ -144,7 +204,7 @@ function ChoiceStep<T extends CompanyNeed | OfferWay>({
   message?: string | null;
   error?: string | null;
   onChange: () => void;
-  onConfirm: (id: T) => void;
+  onConfirm: (id: T) => Promise<void> | void;
 }) {
   const headingId = useId();
   const [selected, setSelected] = useState<T | null>(null);
@@ -193,7 +253,7 @@ function ChoiceStep<T extends CompanyNeed | OfferWay>({
           type="button"
           disabled={selected === null || pending}
           onClick={() => {
-            if (selected) onConfirm(selected);
+            if (selected) void onConfirm(selected);
           }}
           className={cn(
             'min-h-11 w-full rounded-full px-4 text-sm font-semibold disabled:opacity-50 sm:w-auto',
@@ -212,6 +272,46 @@ function ChoiceStep<T extends CompanyNeed | OfferWay>({
             {error}
           </p>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ActiveDeclaration({
+  title,
+  detail,
+  expiresAt,
+  pending,
+  onChange,
+  onCancel,
+}: {
+  title: string;
+  detail: string;
+  expiresAt: string;
+  pending: boolean;
+  onChange: () => void;
+  onCancel: () => void;
+}) {
+  const until = formatCompanionUntil(expiresAt);
+  return (
+    <div className="mx-auto mt-3 max-w-sm rounded-2xl bg-background px-3 py-2 text-sm">
+      <p className="font-medium text-foreground">{title}</p>
+      <p className="text-muted-foreground">
+        {detail}
+        {until ? ` · hasta ${until}` : ''}
+      </p>
+      <div className="mt-2 flex gap-2">
+        <button type="button" onClick={onChange} className="min-h-11 px-2 text-sm font-medium text-foreground">
+          Cambiar
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onCancel}
+          className="min-h-11 px-2 text-sm text-muted-foreground disabled:opacity-50"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );

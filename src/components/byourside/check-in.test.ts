@@ -1,19 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { intentForCompanyNeed, intentForOffer, readCompanionIntent } from './check-in';
+import { needTypeFor, offeringTypeFor } from './check-in';
 
 describe('check-in companion mapping', () => {
-  it('maps only exact companion intents', () => {
-    expect(intentForCompanyNeed('talk')).toBe('TALK');
-    expect(intentForCompanyNeed('listen-only')).toBeNull();
-    expect(intentForCompanyNeed('opinion')).toBeNull();
-    expect(intentForOffer('chat')).toBe('TALK');
-    expect(intentForOffer('distract')).toBe('DISTRACTION');
-    expect(intentForOffer('listen')).toBeNull();
+  it('maps every company need to its own NeedType', () => {
+    expect(needTypeFor('listen-only')).toBe('LISTEN_TO_ME');
+    expect(needTypeFor('talk')).toBe('TALK');
+    expect(needTypeFor('opinion')).toBe('GET_OPINION');
+    expect(needTypeFor('distraction')).toBe('DISTRACTION');
+    expect(needTypeFor('company')).toBe('JUST_COMPANY');
   });
 
-  it('ignores unsafe navigation state', () => {
-    expect(readCompanionIntent(null)).toBeNull();
-    expect(readCompanionIntent({ intent: 'NOT_REAL' })).toBeNull();
-    expect(readCompanionIntent({ intent: 'TALK' })).toBe('TALK');
+  it('maps every offer way to its own OfferingType', () => {
+    expect(offeringTypeFor('listen')).toBe('LISTEN');
+    expect(offeringTypeFor('chat')).toBe('TALK');
+    expect(offeringTypeFor('distract')).toBe('DISTRACT');
   });
 });

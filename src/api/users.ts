@@ -1,5 +1,45 @@
+import axios from 'axios';
 import apiClient from './client';
-import type { PublicUserProfile, Page, Post, DiscoverUser, User } from './types';
+import type {
+  CompanionPreferenceType,
+  CompanionPreferencesResponse,
+  DiscoverUser,
+  Page,
+  Post,
+  PublicAvailability,
+  PublicUserProfile,
+  User,
+} from './types';
+
+export type PublicAvailabilityView =
+  | { kind: 'available'; value: PublicAvailability }
+  | { kind: 'none' }
+  | { kind: 'hidden' };
+
+function absent(data: unknown): data is null | '' {
+  return data == null || data === '';
+}
+
+export async function getPublicAvailability(userId: string): Promise<PublicAvailabilityView> {
+  try {
+    const response = await apiClient.get<PublicAvailability | null>(`/api/users/${userId}/availability`);
+    if (absent(response.data)) return { kind: 'none' };
+    return { kind: 'available', value: response.data };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return { kind: 'hidden' };
+    throw error;
+  }
+}
+
+export async function getCompanionPreferences(): Promise<CompanionPreferenceType[]> {
+  const response = await apiClient.get<CompanionPreferencesResponse>('/api/users/me/companion-preferences');
+  return response.data.types;
+}
+
+export async function replaceCompanionPreferences(types: CompanionPreferenceType[]): Promise<CompanionPreferenceType[]> {
+  const response = await apiClient.patch<CompanionPreferencesResponse>('/api/users/me/companion-preferences', { types });
+  return response.data.types;
+}
 
 export async function getPublicProfile(userId: string): Promise<PublicUserProfile> {
   const response = await apiClient.get<PublicUserProfile>(`/api/users/${userId}`);
