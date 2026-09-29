@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
-import { setAvailability } from '../api/availability';
+import { setNeed, setOffering, cancelNeed, cancelOffering, getMyNeed, getMyOffering } from '../api/companion';
 import { createPost, getFeed } from '../api/posts';
 import { getStatusFeed, setStatus } from '../api/statuses';
-import type { CompanionIntent, Post, Status, StatusMood } from '../api/types';
+import type { CompanionNeed, CompanionOffering, NeedType, OfferingType, Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { Composer } from '../components/byourside/composer';
 import { HomePresencePulse } from '../components/byourside/home-presence-pulse';
@@ -25,9 +25,12 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [availabilityPending, setAvailabilityPending] = useState(false);
-  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [activeNeed, setActiveNeed] = useState<CompanionNeed | null>(null);
+  const [activeOffering, setActiveOffering] = useState<CompanionOffering | null>(null);
+  const [needPending, setNeedPending] = useState(false);
+  const [offeringPending, setOfferingPending] = useState(false);
+  const [needError, setNeedError] = useState<string | null>(null);
+  const [offeringError, setOfferingError] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -43,6 +46,27 @@ export default function FeedPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyNeed()
+      .then((value) => {
+        if (!cancelled) setActiveNeed(value);
+      })
+      .catch(() => {
+        if (!cancelled) setNeedError('No pudimos ver si ya estás buscando compañía.');
+      });
+    getMyOffering()
+      .then((value) => {
+        if (!cancelled) setActiveOffering(value);
+      })
+      .catch(() => {
+        if (!cancelled) setOfferingError('No pudimos ver si ya estás disponible.');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handlePost(content: string) {
@@ -62,33 +86,74 @@ export default function FeedPage() {
 
   function resetPulse() {
     availabilityEpoch.current += 1;
-    setAvailabilityPending(false);
-    setAvailabilityMessage(null);
-    setAvailabilityError(null);
+    setNeedPending(false);
+    setOfferingPending(false);
+    setNeedError(null);
+    setOfferingError(null);
   }
 
-  function seekCompany(intent: CompanionIntent | null) {
-    navigate('/companion', intent ? { state: { intent } } : undefined);
-  }
-
-  async function declareAvailability(intent: CompanionIntent | null) {
-    if (!intent) {
-      navigate('/companion');
-      return;
-    }
+  async function seekCompany(type: NeedType) {
     const epoch = availabilityEpoch.current;
-    setAvailabilityPending(true);
-    setAvailabilityError(null);
-    setAvailabilityMessage(null);
+    setNeedPending(true);
+    setNeedError(null);
     try {
-      await setAvailability(intent);
+      const saved = await setNeed(type);
       if (epoch !== availabilityEpoch.current) return;
-      setAvailabilityMessage(intent === 'TALK' ? 'Quedaste disponible para charlar.' : 'Quedaste disponible para distraernos.');
+      setActiveNeed(saved);
+      navigate('/companion');
     } catch {
       if (epoch !== availabilityEpoch.current) return;
-      setAvailabilityError('No pudimos guardar tu disponibilidad. Podés intentarlo en Modo compañía.');
+      setNeedError('No pudimos guardar lo que necesitás. Podés intentarlo en Modo compañía.');
+      throw new Error('need');
     } finally {
-      if (epoch === availabilityEpoch.current) setAvailabilityPending(false);
+      if (epoch === availabilityEpoch.current) setNeedPending(false);
+    }
+  }
+
+  async function declareAvailability(type: OfferingType) {
+    const epoch = availabilityEpoch.current;
+    setOfferingPending(true);
+    setOfferingError(null);
+    try {
+      const saved = await setOffering(type);
+      if (epoch !== availabilityEpoch.current) return;
+      setActiveOffering(saved);
+    } catch {
+      if (epoch !== availabilityEpoch.current) return;
+      setOfferingError('No pudimos guardar tu disponibilidad. Podés intentarlo en Modo compañía.');
+      throw new Error('offering');
+    } finally {
+      if (epoch === availabilityEpoch.current) setOfferingPending(false);
+    }
+  }
+
+  async function clearNeed() {
+    const previous = activeNeed;
+    setNeedPending(true);
+    setNeedError(null);
+    try {
+      await cancelNeed();
+      setActiveNeed(null);
+    } catch {
+      setActiveNeed(previous);
+      setNeedError('No pudimos cancelar la búsqueda.');
+    } finally {
+      setNeedPending(false);
+    }
+  }
+
+  async function clearOffering() {
+    const previous = activeOffering;
+    setOfferingPending(true);
+    setOfferingError(null);
+    try {
+      await cancelOffering();
+      setActiveOffering(null);
+    } catch {
+      setActiveOffering(previous);
+      setOfferingError('No pudimos cancelar tu disponibilidad.');
+    } finally {
+      setOfferingPending(false);
     }
   }
 
@@ -118,11 +183,16 @@ export default function FeedPage() {
 
       <HomePresencePulse
         onSeekCompany={seekCompany}
-        onDeclareAvailability={(intent) => void declareAvailability(intent)}
+        onDeclareAvailability={declareAvailability}
+        onCancelNeed={clearNeed}
+        onCancelOffering={clearOffering}
         onReset={resetPulse}
-        availabilityPending={availabilityPending}
-        availabilityMessage={availabilityMessage}
-        availabilityError={availabilityError}
+        activeNeed={activeNeed}
+        activeOffering={activeOffering}
+        needPending={needPending}
+        offeringPending={offeringPending}
+        needError={needError}
+        offeringError={offeringError}
       />
 
       <div className="flex items-end justify-between">

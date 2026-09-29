@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CalendarDays, MessageCircle } from 'lucide-react';
-import { getMyAvailability } from '../api/availability';
 import { getOrCreateConversation } from '../api/chat';
 import { getStatusFeed } from '../api/statuses';
-import type { Availability, CompanionIntent, Post, PublicUserProfile, Status } from '../api/types';
-import { getPublicProfile, getUserPosts, uploadAvatar } from '../api/users';
+import type { CompanionPreferenceType, Post, PublicUserProfile, Status } from '../api/types';
+import {
+  getCompanionPreferences,
+  getPublicAvailability,
+  getPublicProfile,
+  getUserPosts,
+  replaceCompanionPreferences,
+  uploadAvatar,
+  type PublicAvailabilityView,
+} from '../api/users';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
@@ -13,16 +20,8 @@ import PostCard from '../components/PostCard';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { Badge, Button, Card, EmptyState, ErrorState } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
+import { companionFailure, PREFERENCE_LABEL, PREFERENCE_ORDER, PUBLIC_AVAILABILITY_LABEL } from '../lib/companion';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
-
-const AVAILABILITY_LABEL: Record<CompanionIntent, string> = {
-  TALK: 'Hablar',
-  DISTRACTION: 'Distraerme',
-  WATCH_TOGETHER: 'Ver algo juntos',
-  MUSIC: 'Escuchar música',
-  LAUGH: 'Reírnos un rato',
-  JUST_COMPANY: 'Solo compañía',
-};
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -35,7 +34,12 @@ export default function ProfilePage() {
     latestStatus: Status | null;
   } | null>(null);
   const [failedUserId, setFailedUserId] = useState<string | null>(null);
-  const [availability, setAvailability] = useState<{ userId: string; value: Availability | null } | null>(null);
+  const [availability, setAvailability] = useState<{ userId: string; view: PublicAvailabilityView } | null>(null);
+  const [preferences, setPreferences] = useState<{ userId: string; types: CompanionPreferenceType[] } | null>(null);
+  const [confirmedPreferences, setConfirmedPreferences] = useState<{ userId: string; types: CompanionPreferenceType[] } | null>(null);
+  const [preferenceError, setPreferenceError] = useState<string | null>(null);
+  const [preferenceSaving, setPreferenceSaving] = useState(false);
+  const [preferenceSaved, setPreferenceSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [tab, setTab] = useState<'posts' | 'presence'>('posts');
@@ -73,15 +77,35 @@ export default function ProfilePage() {
 
   const ownProfileId = isOwn && profile ? profile.id : null;
 
+  const viewedUserId = profile?.id ?? null;
+
+  useEffect(() => {
+    if (!viewedUserId) return undefined;
+    let cancelled = false;
+    getPublicAvailability(viewedUserId)
+      .then((view) => {
+        if (!cancelled) setAvailability({ userId: viewedUserId, view });
+      })
+      .catch(() => {
+        if (!cancelled) setAvailability({ userId: viewedUserId, view: { kind: 'hidden' } });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewedUserId]);
+
   useEffect(() => {
     if (!ownProfileId) return undefined;
     let cancelled = false;
-    getMyAvailability()
-      .then((value) => {
-        if (!cancelled) setAvailability({ userId: ownProfileId, value });
+    getCompanionPreferences()
+      .then((types) => {
+        if (!cancelled) {
+          setPreferences({ userId: ownProfileId, types });
+          setConfirmedPreferences({ userId: ownProfileId, types });
+        }
       })
       .catch(() => {
-        if (!cancelled) setAvailability({ userId: ownProfileId, value: null });
+        if (!cancelled) setPreferenceError('No pudimos leer cómo solés estar para otros.');
       });
     return () => {
       cancelled = true;
@@ -107,8 +131,11 @@ export default function ProfilePage() {
   const moodBadge = latestStatus
     ? { label: STATUS_MOOD_UI[latestStatus.mood].label, tone: moodToneToBadgeTone(STATUS_MOOD_UI[latestStatus.mood].tone) }
     : null;
-  const activeAvailability = isOwn && availability?.userId === profile.id ? availability.value : null;
-  const availabilityLabel = activeAvailability ? AVAILABILITY_LABEL[activeAvailability.intent] : null;
+  const availabilityView = availability?.userId === profile.id ? availability.view : null;
+  const availabilityLabel =
+    availabilityView?.kind === 'available' ? PUBLIC_AVAILABILITY_LABEL[availabilityView.value.offeringType] : null;
+  const publicPreferences = profile.companionPreferences;
+  const ownPreferences = isOwn && preferences?.userId === profile.id ? preferences.types : null;
 
   async function handleAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -129,6 +156,40 @@ export default function ProfilePage() {
   async function handleMessage() {
     const conversation = await getOrCreateConversation(profileId);
     navigate(`/messages/${conversation.id}`);
+  }
+
+  function togglePreference(type: CompanionPreferenceType) {
+    if (!ownPreferences || !profile) return;
+    setPreferenceSaved(false);
+    setPreferenceError(null);
+    const next = ownPreferences.includes(type)
+      ? ownPreferences.filter((item) => item !== type)
+      : PREFERENCE_ORDER.filter((item) => item === type || ownPreferences.includes(item));
+    setPreferences({ userId: profile.id, types: next });
+  }
+
+  async function savePreferences() {
+    if (!ownPreferences || !profile) return;
+    const confirmed = confirmedPreferences?.userId === profile.id ? confirmedPreferences.types : ownPreferences;
+    setPreferenceSaving(true);
+    setPreferenceError(null);
+    setPreferenceSaved(false);
+    try {
+      const saved = await replaceCompanionPreferences(ownPreferences);
+      setPreferences({ userId: profile.id, types: saved });
+      setConfirmedPreferences({ userId: profile.id, types: saved });
+      setSnapshot((prev) =>
+        prev && prev.profile.id === profileId
+          ? { ...prev, profile: { ...prev.profile, companionPreferences: saved } }
+          : prev,
+      );
+      setPreferenceSaved(true);
+    } catch (saveError) {
+      setPreferences({ userId: profile.id, types: confirmed });
+      setPreferenceError(companionFailure(saveError, 'No pudimos guardar cómo solés estar.'));
+    } finally {
+      setPreferenceSaving(false);
+    }
   }
 
   function openAvatarPicker() {
@@ -186,13 +247,26 @@ export default function ProfilePage() {
             Se unió {new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
           </p>
 
-          {isOwn && availabilityLabel ? (
+          {availabilityLabel ? (
             <div className="mt-4">
               <p className="text-xs text-muted-foreground">Disponible ahora</p>
-              <Badge tone="listening" className="mt-1.5">
-                {availabilityLabel}
-              </Badge>
+              <p className="mt-1 text-sm text-foreground">{availabilityLabel}</p>
             </div>
+          ) : null}
+
+          {!isOwn && publicPreferences && publicPreferences.length > 0 ? (
+            <section className="mt-4" aria-labelledby="profile-preferences-title">
+              <h2 id="profile-preferences-title" className="text-xs text-muted-foreground">
+                Cómo suele estar para otros
+              </h2>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {PREFERENCE_ORDER.filter((type) => publicPreferences.includes(type)).map((type) => (
+                  <li key={type} className="rounded-full bg-muted px-3 py-1 text-sm text-foreground">
+                    {PREFERENCE_LABEL[type]}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           <div className="mt-4 flex gap-2">
@@ -290,6 +364,58 @@ export default function ProfilePage() {
         />
       )}
       </div>
+
+      {isOwn ? (
+        <section aria-labelledby="own-preferences-title" className="space-y-3">
+          <div>
+            <h2 id="own-preferences-title" className="font-serif text-lg">
+              Cómo suelo estar para otros
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Describe cómo solés acompañar. Guardar esto no te deja disponible ahora.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Cómo suelo estar para otros">
+            {PREFERENCE_ORDER.map((type) => {
+              const selected = ownPreferences?.includes(type) ?? false;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={ownPreferences === null || preferenceSaving}
+                  onClick={() => togglePreference(type)}
+                  className={cn(
+                    'min-h-11 rounded-full px-4 text-sm',
+                    selected ? 'bg-listening-soft font-medium text-listening-strong' : 'bg-muted text-foreground',
+                  )}
+                >
+                  {PREFERENCE_LABEL[type]}
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={ownPreferences === null || preferenceSaving}
+            onClick={() => void savePreferences()}
+          >
+            {preferenceSaving ? 'Guardando…' : 'Guardar'}
+          </Button>
+          {preferenceSaved ? (
+            <p role="status" className="text-sm text-listening-strong">
+              Guardado.
+            </p>
+          ) : null}
+          {preferenceError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {preferenceError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {isOwn ? (
         <section className="flex flex-col items-center gap-2 pt-1">

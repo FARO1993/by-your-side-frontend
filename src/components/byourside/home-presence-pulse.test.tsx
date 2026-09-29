@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { HomePresencePulse } from './home-presence-pulse';
@@ -37,40 +37,75 @@ describe('HomePresencePulse', () => {
     expect(onSeekCompany).toHaveBeenCalledWith('TALK');
   });
 
-  it('does not invent an intent for listening or an opinion', async () => {
-    const onSeekCompany = vi.fn();
-    const view = render(<HomePresencePulse {...base} onSeekCompany={onSeekCompany} />);
+  it('maps every company need, including distraction and company', async () => {
+    const onSeekCompany = vi.fn().mockResolvedValue(undefined);
+    render(<HomePresencePulse {...base} onSeekCompany={onSeekCompany} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Necesito compañía' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Solo escucharme' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Encontrar compañía' }));
-    expect(onSeekCompany).toHaveBeenCalledWith(null);
+    async function choose(label: string) {
+      await userEvent.click(screen.getByRole('button', { name: 'Necesito compañía' }));
+      await userEvent.click(screen.getByRole('radio', { name: label }));
+      await userEvent.click(screen.getByRole('button', { name: 'Encontrar compañía' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Necesito compañía' })).toBeInTheDocument());
+    }
 
-    view.rerender(<HomePresencePulse {...base} onSeekCompany={onSeekCompany} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Necesito compañía' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Me vendría bien una opinión' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Encontrar compañía' }));
-    expect(onSeekCompany).toHaveBeenLastCalledWith(null);
+    await choose('Solo escucharme');
+    expect(onSeekCompany).toHaveBeenLastCalledWith('LISTEN_TO_ME');
+    await choose('Quiero conversar');
+    expect(onSeekCompany).toHaveBeenLastCalledWith('TALK');
+    await choose('Me vendría bien una opinión');
+    expect(onSeekCompany).toHaveBeenLastCalledWith('GET_OPINION');
+    await choose('Quiero distraerme');
+    expect(onSeekCompany).toHaveBeenLastCalledWith('DISTRACTION');
+    await choose('Solo acompañame');
+    expect(onSeekCompany).toHaveBeenLastCalledWith('JUST_COMPANY');
   });
 
-  it('declares exact availability and leaves listening unmapped', async () => {
-    const onDeclareAvailability = vi.fn();
+  it('maps every way of being available', async () => {
+    const onDeclareAvailability = vi.fn().mockResolvedValue(undefined);
     render(<HomePresencePulse {...base} onDeclareAvailability={onDeclareAvailability} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Estoy disponible' }));
     expect(screen.getByRole('heading', { name: '¿Cómo podés estar hoy?' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: 'Podemos charlar' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Confirmar disponibilidad' }));
-    expect(onDeclareAvailability).toHaveBeenCalledWith('TALK');
-
-    await userEvent.click(screen.getByRole('radio', { name: 'Podemos distraernos' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Confirmar disponibilidad' }));
-    expect(onDeclareAvailability).toHaveBeenLastCalledWith('DISTRACTION');
-
     await userEvent.click(screen.getByRole('radio', { name: 'Puedo escuchar' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar disponibilidad' }));
-    expect(onDeclareAvailability).toHaveBeenLastCalledWith(null);
+    await waitFor(() => expect(onDeclareAvailability).toHaveBeenCalledWith('LISTEN'));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Estoy disponible' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Podemos charlar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar disponibilidad' }));
+    await waitFor(() => expect(onDeclareAvailability).toHaveBeenLastCalledWith('TALK'));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Estoy disponible' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Podemos distraernos' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar disponibilidad' }));
+    await waitFor(() => expect(onDeclareAvailability).toHaveBeenLastCalledWith('DISTRACT'));
+  });
+
+  it('shows an active need and an active offering at the same time', async () => {
+    const onCancelNeed = vi.fn();
+    const onCancelOffering = vi.fn();
+    render(
+      <HomePresencePulse
+        {...base}
+        activeNeed={{ id: 'need-1', type: 'TALK', createdAt: '2026-09-20T12:00:00.000Z', expiresAt: '2026-09-20T14:00:00.000Z' }}
+        activeOffering={{ id: 'off-1', type: 'LISTEN', createdAt: '2026-09-20T12:00:00.000Z', expiresAt: '2026-09-20T18:00:00.000Z' }}
+        onCancelNeed={onCancelNeed}
+        onCancelOffering={onCancelOffering}
+      />,
+    );
+
+    expect(screen.getByText('Estás buscando compañía')).toBeInTheDocument();
+    expect(screen.getByText(/Quiero conversar/)).toBeInTheDocument();
+    expect(screen.getByText('Estás disponible')).toBeInTheDocument();
+    expect(screen.getByText(/Puedo escuchar/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Necesito compañía' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Estoy disponible' })).not.toBeInTheDocument();
+
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancelar' });
+    await userEvent.click(cancelButtons[0]);
+    await userEvent.click(cancelButtons[1]);
+    expect(onCancelNeed).toHaveBeenCalled();
+    expect(onCancelOffering).toHaveBeenCalled();
   });
 
   it('returns to the idle pulse when changing', async () => {

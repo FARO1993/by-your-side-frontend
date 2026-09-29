@@ -93,6 +93,8 @@ export interface FollowResponse {
   createdAt: string;
 }
 
+export type CompanionPreferenceType = 'LISTEN' | 'TALK' | 'DISTRACT';
+
 export interface PublicUserProfile {
   id: string;
   username: string;
@@ -103,6 +105,7 @@ export interface PublicUserProfile {
   followersCount: number;
   followingCount: number;
   followedByCurrentUser: boolean;
+  companionPreferences: CompanionPreferenceType[] | null;
 }
 
 export type ProfileVisibility = 'PUBLIC' | 'PRIVATE';
@@ -171,12 +174,36 @@ export interface Conversation {
   unreadCount: number;
 }
 
-export type CompanionIntent = 'TALK' | 'DISTRACTION' | 'WATCH_TOGETHER' | 'MUSIC' | 'LAUGH' | 'JUST_COMPANY';
+export type NeedType = 'LISTEN_TO_ME' | 'TALK' | 'GET_OPINION' | 'DISTRACTION' | 'JUST_COMPANY';
 
-export interface Availability {
+export type OfferingType = 'LISTEN' | 'TALK' | 'DISTRACT';
+
+export interface CompanionNeed {
   id: string;
-  user: UserSummary;
-  intent: CompanionIntent;
+  type: NeedType;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface CompanionOffering {
+  id: string;
+  type: OfferingType;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface CompanionCandidate {
+  user: UserSummary;
+  offeringType: OfferingType;
+  expiresAt: string;
+}
+
+export interface PublicAvailability {
+  available: true;
+  offeringType: OfferingType;
+  expiresAt: string;
+}
+
+export interface CompanionPreferencesResponse {
+  types: CompanionPreferenceType[];
 }
