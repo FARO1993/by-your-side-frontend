@@ -1,45 +1,46 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { MessageSquare } from 'lucide-react';
-import type { Post } from '../api/types';
+import type { Post, PostResponseSummary, PostResponseType } from '../api/types';
+import { deletePostResponse, setPostResponse } from '../api/posts';
 import { useAuth } from '../context/AuthContext';
+import { nextPostResponseState, type PostResponseState } from '../lib/postResponse';
 import { timeAgo } from '../lib/timeAgo';
-import { getSelectedResponse, selectPostResponse } from '../services/postResponseService';
-import { RESPONSE_OPTIONS } from '../lib/visual';
 import Avatar from './Avatar';
 import CommentList from './CommentList';
 import FollowButton from './FollowButton';
-import { ResponseActions } from './byourside/response-actions';
+import { PostResponseMenu } from './byourside/post-response-menu';
 
 export default function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
-  const [supported, setSupported] = useState(post.supportedByCurrentUser);
-  const [supportCount, setSupportCount] = useState(post.supportCount);
-  const [selected, setSelected] = useState<string | null>(
-    getSelectedResponse(post.id, post.supportedByCurrentUser),
-  );
+  const [response, setResponse] = useState<PostResponseState>({
+    presenceCount: post.presenceCount,
+    listeningCount: post.listeningCount,
+    currentUserResponseType: post.currentUserResponseType,
+  });
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isOwnPost = user?.id === post.author.id;
   const name = post.author.displayName || post.author.username;
-  const respondedKind = RESPONSE_OPTIONS.find((option) => option.id === selected)?.kind ?? null;
 
-  async function handleSelect(optionId: string) {
-    const next = selected === optionId ? null : optionId;
-    const previous = { selected, supported, supportCount };
+  async function handleSelect(type: PostResponseType) {
+    if (pending) return;
+    const removing = response.currentUserResponseType === type;
+    const previous = response;
+    const optimistic = nextPostResponseState(previous, removing ? null : type);
+    setError(null);
+    setResponse(optimistic);
+    setPending(true);
     try {
-      setError(null);
-      const result = await selectPostResponse(post.id, next, supported);
-      setSelected(result.selected);
-      if (result.support) {
-        setSupported(result.support.supportedByCurrentUser);
-        setSupportCount(result.support.supportCount);
-      }
-    } catch {
-      setSelected(previous.selected);
-      setSupported(previous.supported);
-      setSupportCount(previous.supportCount);
-      setError('No pudimos guardar tu respuesta. Probá de nuevo en un momento.');
+      const summary = removing ? await deletePostResponse(post.id) : await setPostResponse(post.id, type);
+      setResponse(stateFromSummary(summary));
+    } catch (requestError: unknown) {
+      setResponse(previous);
+      setError(responseErrorMessage(requestError));
+    } finally {
+      setPending(false);
     }
   }
 
@@ -62,7 +63,9 @@ export default function PostCard({ post }: { post: Post }) {
         {post.content}
       </p>
 
-      <ResponseActions selectedId={selected} onSelect={handleSelect} />
+      {isOwnPost ? null : (
+        <PostResponseMenu value={response.currentUserResponseType} disabled={pending} onSelect={(type) => void handleSelect(type)} />
+      )}
       {error ? (
         <p role="alert" className="mt-2 text-xs font-medium text-destructive">
           {error}
@@ -70,20 +73,11 @@ export default function PostCard({ post }: { post: Post }) {
       ) : null}
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3.5 text-xs text-muted-foreground">
-        <div className="flex gap-4">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-presence" />
-            {supportCount === 1 ? '1 te acompaña' : `${supportCount} te acompañan`}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-listening" />
-            {respondedKind === 'listening' ? '1 ofrece escucha' : '0 ofrecen escucha'}
-          </span>
-        </div>
+        <ResponseCounts presenceCount={response.presenceCount} listeningCount={response.listeningCount} />
         <button
           type="button"
-          onClick={() => setShowComments((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 font-medium hover:text-foreground"
+          onClick={() => setShowComments((current) => !current)}
+          className="inline-flex items-center gap-1.5 font-medium hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening"
         >
           <MessageSquare className="size-3.5" />
           {showComments ? 'Ocultar respuestas' : 'Respuestas'}
@@ -97,4 +91,39 @@ export default function PostCard({ post }: { post: Post }) {
       ) : null}
     </article>
   );
+}
+
+function ResponseCounts({ presenceCount, listeningCount }: { presenceCount: number; listeningCount: number }) {
+  if (presenceCount === 0 && listeningCount === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-4">
+      {presenceCount > 0 ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-presence" />
+          Presencia {presenceCount}
+        </span>
+      ) : null}
+      {listeningCount > 0 ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-listening" />
+          Escucha {listeningCount}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function stateFromSummary(summary: PostResponseSummary): PostResponseState {
+  return {
+    presenceCount: summary.presenceCount,
+    listeningCount: summary.listeningCount,
+    currentUserResponseType: summary.type,
+  };
+}
+
+function responseErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error) && error.response?.status === 404) return 'Esta publicación ya no está disponible.';
+  if (axios.isAxiosError(error) && error.response?.status === 400) return 'Esa respuesta no se pudo guardar.';
+  return 'No pudimos guardar tu respuesta. Probá de nuevo en un momento.';
 }
