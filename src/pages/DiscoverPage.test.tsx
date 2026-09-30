@@ -128,7 +128,8 @@ describe('DiscoverPage', () => {
     renderDiscover();
 
     expect(await screen.findByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Solicitud enviada' })).toBeDisabled();
+    expect(screen.getByText('Solicitud enviada')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar solicitud' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Acompañás' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -145,7 +146,8 @@ describe('DiscoverPage', () => {
     renderDiscover();
 
     await user.click(await screen.findByRole('button', { name: 'Acompañar' }));
-    expect(await screen.findByRole('button', { name: 'Solicitud enviada' })).toBeDisabled();
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar solicitud' })).toBeEnabled();
   });
 
   it('keeps the follow button when the request fails', async () => {

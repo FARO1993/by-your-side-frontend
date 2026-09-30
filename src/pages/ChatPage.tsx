@@ -21,6 +21,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<Conversation['otherUser'] | null>(null);
   const [content, setContent] = useState('');
+  const [sendError, setSendError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);
@@ -54,8 +55,14 @@ export default function ChatPage() {
     if (!conversationId || !content.trim()) return;
     const trimmed = content;
     setContent('');
-    const message = await sendMessage(conversationId, trimmed);
-    setMessages((prev) => [...prev, message]);
+    setSendError(null);
+    try {
+      const message = await sendMessage(conversationId, trimmed);
+      setMessages((prev) => [...prev, message]);
+    } catch {
+      setContent(trimmed);
+      setSendError('No pudimos enviar el mensaje.');
+    }
   }
 
   function handleKey(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -138,24 +145,31 @@ export default function ChatPage() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-border/60 bg-background p-3">
-            <textarea
-              value={content}
-              maxLength={2000}
-              rows={1}
-              onChange={(event) => setContent(event.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Escribí un mensaje…"
-              className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-input bg-card px-4 py-2.5 text-sm focus:border-presence focus-visible:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!content.trim()}
-              aria-label="Enviar"
-              className="flex size-11 items-center justify-center rounded-full bg-presence text-presence-foreground shadow-soft disabled:opacity-50"
-            >
-              <Send className="size-5" />
-            </button>
+          <form onSubmit={handleSubmit} className="border-t border-border/60 bg-background p-3">
+            {sendError ? (
+              <p role="alert" className="mb-2 text-sm text-destructive">
+                {sendError}
+              </p>
+            ) : null}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={content}
+                maxLength={2000}
+                rows={1}
+                onChange={(event) => setContent(event.target.value)}
+                onKeyDown={handleKey}
+                placeholder="Escribí un mensaje…"
+                className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-input bg-card px-4 py-2.5 text-sm focus:border-presence focus-visible:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!content.trim()}
+                aria-label="Enviar"
+                className="flex size-11 items-center justify-center rounded-full bg-presence text-presence-foreground shadow-soft disabled:opacity-50"
+              >
+                <Send className="size-5" />
+              </button>
+            </div>
           </form>
         </section>
       </div>

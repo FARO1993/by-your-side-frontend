@@ -18,6 +18,7 @@ export interface User {
   createdAt: string;
   emailVerified: boolean;
   emailVerifiedAt: string | null;
+  profileVisibility?: ProfileVisibility;
 }
 
 export interface LoginCredentials {
@@ -124,6 +125,10 @@ export interface PublicUserProfile {
   followingCount: number;
   followedByCurrentUser: boolean;
   companionPreferences: CompanionPreferenceType[] | null;
+  profileVisibility: ProfileVisibility;
+  followState: DiscoverFollowState;
+  blockedByCurrentUser: boolean;
+  mutedByCurrentUser: boolean;
 }
 
 export type ProfileVisibility = 'PUBLIC' | 'PRIVATE';

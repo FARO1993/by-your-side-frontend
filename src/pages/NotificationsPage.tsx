@@ -7,6 +7,7 @@ import { getNotifications, getUnreadCount, markAllAsRead, markNotificationRead }
 import type { Notification, NotificationType } from '../api/types';
 import { useNotificationUnread } from '../context/notificationUnreadContext';
 import { applyNotificationPage, getNotificationDestination, nextUnreadCount, notificationCopy, prependNotification } from '../lib/notifications';
+import { FOLLOW_REQUEST_STALE } from '../lib/followRequest';
 import { timeAgo } from '../lib/timeAgo';
 import Avatar from '../components/Avatar';
 import { Button, EmptyState, ErrorState, PresenceGlyph } from '../components/byourside/ui';
@@ -16,7 +17,6 @@ const LOAD_ERROR = 'No pudimos cargar tus novedades.';
 const MARK_ERROR = 'No pudimos marcar las novedades como leídas.';
 const MARK_ONE_ERROR = 'No pudimos marcar esa novedad como leída.';
 const REQUEST_ERROR = 'No pudimos actualizar esa solicitud.';
-const REQUEST_STALE = 'Esa solicitud ya no está pendiente.';
 
 const groups = ['Hoy', 'Ayer', 'Anteriores'] as const;
 type DayGroup = (typeof groups)[number];
@@ -159,7 +159,7 @@ export default function NotificationsPage() {
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
         setRequests((current) => ({ ...current, [item.id]: 'stale' }));
-        setMarkError(REQUEST_STALE);
+        setMarkError(FOLLOW_REQUEST_STALE);
         return;
       }
       setRequests((current) => {

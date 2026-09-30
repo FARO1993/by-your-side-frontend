@@ -14,3 +14,12 @@ export async function getFollowing(userId: string): Promise<UserSummary[]> {
   const response = await apiClient.get<UserSummary[]>(`/api/follows/${userId}/following`);
   return response.data;
 }
+
+export async function getFollowers(userId: string): Promise<UserSummary[]> {
+  const response = await apiClient.get<UserSummary[]>(`/api/follows/${userId}/followers`);
+  return response.data;
+}
+
+export async function removeFollower(userId: string): Promise<void> {
+  await apiClient.delete(`/api/follows/followers/${userId}`);
+}
