@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { Bell, Check, Ear, MessageSquare, UserPlus } from 'lucide-react';
-import { getNotifications, getUnreadCount, markAllAsRead } from '../api/notifications';
+import { acceptFollowRequest, rejectFollowRequest } from '../api/followRequests';
+import { getNotifications, getUnreadCount, markAllAsRead, markNotificationRead } from '../api/notifications';
 import type { Notification, NotificationType } from '../api/types';
 import { useNotificationUnread } from '../context/notificationUnreadContext';
+import { applyNotificationPage, getNotificationDestination, nextUnreadCount, notificationCopy, prependNotification } from '../lib/notifications';
 import { timeAgo } from '../lib/timeAgo';
 import Avatar from '../components/Avatar';
 import { Button, EmptyState, ErrorState, PresenceGlyph } from '../components/byourside/ui';
@@ -11,30 +14,13 @@ import { cn } from '../lib/cn';
 
 const LOAD_ERROR = 'No pudimos cargar tus novedades.';
 const MARK_ERROR = 'No pudimos marcar las novedades como leídas.';
-
-const copyByType: Record<NotificationType, string> = {
-  NEW_FOLLOWER: 'empezó a acompañarte',
-  NEW_COMMENT: 'respondió tu publicación',
-  NEW_SUPPORT: 'te hizo saber que está con vos',
-  NEW_STATUS_REACTION: 'reaccionó a tu estado',
-  FOLLOW_REQUEST_RECEIVED: 'quiere acompañarte',
-  FOLLOW_REQUEST_ACCEPTED: 'aceptó tu solicitud',
-};
+const MARK_ONE_ERROR = 'No pudimos marcar esa novedad como leída.';
+const REQUEST_ERROR = 'No pudimos actualizar esa solicitud.';
+const REQUEST_STALE = 'Esa solicitud ya no está pendiente.';
 
 const groups = ['Hoy', 'Ayer', 'Anteriores'] as const;
 type DayGroup = (typeof groups)[number];
-
-function actionCopy(type: string): string {
-  if (type in copyByType) return copyByType[type as NotificationType];
-  return '';
-}
-
-function destination(item: Notification): string {
-  if ((item.type === 'NEW_COMMENT' || item.type === 'NEW_SUPPORT') && item.postId) {
-    return `/posts/${item.postId}`;
-  }
-  return `/profile/${item.actor.id}`;
-}
+type RequestView = 'working' | 'resolved' | 'stale';
 
 function dayGroup(iso: string, now = new Date()): DayGroup {
   const date = new Date(iso);
@@ -48,7 +34,7 @@ function dayGroup(iso: string, now = new Date()): DayGroup {
 
 function KindMark({ type }: { type: NotificationType }) {
   const presence =
-    type === 'NEW_SUPPORT' ||
+    type === 'NEW_POST_RESPONSE' ||
     type === 'NEW_FOLLOWER' ||
     type === 'FOLLOW_REQUEST_RECEIVED' ||
     type === 'FOLLOW_REQUEST_ACCEPTED';
@@ -60,7 +46,7 @@ function KindMark({ type }: { type: NotificationType }) {
         presence ? 'bg-presence-soft text-presence-strong' : 'bg-listening-soft text-listening-strong',
       )}
     >
-      {type === 'NEW_SUPPORT' ? <PresenceGlyph className="h-2.5 w-3.5" /> : null}
+      {type === 'NEW_POST_RESPONSE' ? <PresenceGlyph className="h-2.5 w-3.5" /> : null}
       {type === 'NEW_FOLLOWER' || type === 'FOLLOW_REQUEST_RECEIVED' ? <UserPlus className="size-3" /> : null}
       {type === 'FOLLOW_REQUEST_ACCEPTED' ? <Check className="size-3" /> : null}
       {type === 'NEW_COMMENT' ? <MessageSquare className="size-3" /> : null}
@@ -87,19 +73,21 @@ function NotificationsSkeleton() {
 }
 
 export default function NotificationsPage() {
-  const { notificationUnread, setNotificationUnread, subscribe } = useNotificationUnread();
+  const { notificationUnread, setNotificationUnread, subscribe, remember } = useNotificationUnread();
   const [items, setItems] = useState<Notification[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [requestId, setRequestId] = useState(0);
   const [marking, setMarking] = useState(false);
   const [markError, setMarkError] = useState<string | null>(null);
+  const [requests, setRequests] = useState<Record<string, RequestView>>({});
 
   useEffect(() => {
     let cancelled = false;
     getNotifications()
       .then((page) => {
         if (cancelled) return;
-        setItems(page.content);
+        remember(page.content.map((item) => item.id));
+        setItems((current) => applyNotificationPage(current, page.content));
         setFailed(false);
       })
       .catch(() => {
@@ -108,14 +96,11 @@ export default function NotificationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [requestId]);
+  }, [requestId, remember]);
 
   useEffect(() => {
     return subscribe((incoming) => {
-      setItems((current) => {
-        if (!current || current.some((item) => item.id === incoming.id)) return current;
-        return [incoming, ...current];
-      });
+      setItems((current) => (current ? prependNotification(current, incoming) : current));
     });
   }, [subscribe]);
 
@@ -128,6 +113,18 @@ export default function NotificationsPage() {
     setFailed(false);
     setMarkError(null);
     setRequestId((current) => current + 1);
+  }
+
+  function markOne(item: Notification) {
+    if (item.read) return;
+    const previousUnread = notificationUnread;
+    setItems((current) => current?.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry)) ?? current);
+    setNotificationUnread(nextUnreadCount(previousUnread, -1));
+    void markNotificationRead(item.id).catch((error: unknown) => {
+      setItems((current) => current?.map((entry) => (entry.id === item.id ? { ...entry, read: false } : entry)) ?? current);
+      setNotificationUnread(previousUnread);
+      setMarkError(axios.isAxiosError(error) && error.response?.status === 404 ? 'Esa novedad ya no está disponible.' : MARK_ONE_ERROR);
+    });
   }
 
   async function handleMarkAll() {
@@ -148,6 +145,29 @@ export default function NotificationsPage() {
       setMarkError(MARK_ERROR);
     } finally {
       setMarking(false);
+    }
+  }
+
+  async function resolveRequest(item: Notification, decision: 'accept' | 'reject') {
+    if (!item.followRequestId || requests[item.id]) return;
+    setRequests((current) => ({ ...current, [item.id]: 'working' }));
+    setMarkError(null);
+    try {
+      if (decision === 'accept') await acceptFollowRequest(item.followRequestId);
+      else await rejectFollowRequest(item.followRequestId);
+      setRequests((current) => ({ ...current, [item.id]: 'resolved' }));
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        setRequests((current) => ({ ...current, [item.id]: 'stale' }));
+        setMarkError(REQUEST_STALE);
+        return;
+      }
+      setRequests((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      setMarkError(REQUEST_ERROR);
     }
   }
 
@@ -207,7 +227,14 @@ export default function NotificationsPage() {
               <h2 className="px-1 text-xs font-medium text-muted-foreground">{group.label}</h2>
               <ul className="space-y-2">
                 {group.items.map((item) => (
-                  <NotificationRow key={item.id} item={item} />
+                  <NotificationRow
+                    key={item.id}
+                    item={item}
+                    requestView={requests[item.id]}
+                    onOpen={() => markOne(item)}
+                    onAccept={() => void resolveRequest(item, 'accept')}
+                    onReject={() => void resolveRequest(item, 'reject')}
+                  />
                 ))}
               </ul>
             </section>
@@ -218,44 +245,71 @@ export default function NotificationsPage() {
   );
 }
 
-function NotificationRow({ item }: { item: Notification }) {
-  const name = item.actor.displayName || item.actor.username;
-  const action = actionCopy(item.type);
+function NotificationRow({
+  item,
+  requestView,
+  onOpen,
+  onAccept,
+  onReject,
+}: {
+  item: Notification;
+  requestView?: RequestView;
+  onOpen: () => void;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  const name = item.actor?.displayName || item.actor?.username || 'Alguien';
+  const action = notificationCopy(item.type);
   const when = timeAgo(item.createdAt);
-  return (
-    <li>
-      <Link
-        to={destination(item)}
-        aria-label={`${name} ${action}. ${item.read ? 'Leída' : 'Sin leer'}. ${when}`}
-        className={cn(
-          'flex items-start gap-3 rounded-2xl px-3 py-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening sm:px-4',
-          item.read ? 'bg-card' : 'bg-presence-soft/40',
-        )}
-      >
-        <span className="relative shrink-0">
-          <Avatar avatarUrl={item.actor.avatarUrl} name={name} size="md" />
-          <KindMark type={item.type} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-start justify-between gap-3">
-            <span
-              className={cn(
-                'text-[0.95rem] leading-snug',
-                item.read ? 'text-foreground/70' : 'text-foreground',
-              )}
-            >
-              <span className={item.read ? 'font-medium' : 'font-semibold'}>{name}</span>
-              {action ? ` ${action}` : null}
-            </span>
-            {item.read ? null : (
-              <span className="mt-1.5 size-2 shrink-0 rounded-full bg-presence" aria-hidden="true" />
-            )}
+  const destination = getNotificationDestination(item);
+  const label = `${name} ${action}. ${item.read ? 'Leída' : 'Sin leer'}. ${when}`;
+  const className = cn(
+    'flex items-start gap-3 rounded-2xl px-3 py-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening sm:px-4',
+    item.read ? 'bg-card' : 'bg-presence-soft/40',
+  );
+  const body = (
+    <>
+      <span className="relative shrink-0">
+        <Avatar avatarUrl={item.actor?.avatarUrl ?? null} name={name} size="md" />
+        <KindMark type={item.type} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-start justify-between gap-3">
+          <span className={cn('text-[0.95rem] leading-snug', item.read ? 'text-foreground/70' : 'text-foreground')}>
+            <span className={item.read ? 'font-medium' : 'font-semibold'}>{name}</span>
+            {action ? ` ${action}` : null}
           </span>
-          <time dateTime={item.createdAt} className="mt-1 block text-xs text-muted-foreground">
-            {when}
-          </time>
+          {item.read ? null : <span className="mt-1.5 size-2 shrink-0 rounded-full bg-presence" aria-hidden="true" />}
         </span>
-      </Link>
+        <time dateTime={item.createdAt} className="mt-1 block text-xs text-muted-foreground">
+          {when}
+        </time>
+      </span>
+    </>
+  );
+  const canResolve = item.type === 'FOLLOW_REQUEST_RECEIVED' && item.followRequestId && requestView !== 'resolved' && requestView !== 'stale';
+
+  return (
+    <li className="space-y-2">
+      {destination ? (
+        <Link to={destination} aria-label={label} className={className} onClick={onOpen}>
+          {body}
+        </Link>
+      ) : (
+        <button type="button" aria-label={label} className={cn(className, 'w-full text-left')} onClick={onOpen}>
+          {body}
+        </button>
+      )}
+      {canResolve ? (
+        <div className="flex flex-wrap gap-2 px-3 sm:px-4">
+          <Button type="button" size="sm" variant="soft" disabled={requestView === 'working'} onClick={onAccept}>
+            Aceptar
+          </Button>
+          <Button type="button" size="sm" variant="outline" disabled={requestView === 'working'} onClick={onReject}>
+            Rechazar
+          </Button>
+        </div>
+      ) : null}
     </li>
   );
 }

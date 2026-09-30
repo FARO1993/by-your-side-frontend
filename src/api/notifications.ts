@@ -16,3 +16,8 @@ export async function getUnreadCount(): Promise<number> {
 export async function markAllAsRead(): Promise<void> {
   await apiClient.patch('/api/notifications/read-all');
 }
+
+export async function markNotificationRead(notificationId: string): Promise<Notification> {
+  const response = await apiClient.patch<Notification>(`/api/notifications/${notificationId}/read`);
+  return response.data;
+}

@@ -7,6 +7,7 @@ export interface NotificationUnreadValue {
   notificationUnread: number;
   setNotificationUnread: Dispatch<SetStateAction<number>>;
   subscribe: (listener: NotificationListener) => () => void;
+  remember: (ids: string[]) => void;
 }
 
 export const NotificationUnreadContext = createContext<NotificationUnreadValue | null>(null);

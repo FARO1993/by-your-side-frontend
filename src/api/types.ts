@@ -143,7 +143,7 @@ export interface DiscoverUser {
 export type NotificationType =
   | 'NEW_FOLLOWER'
   | 'NEW_COMMENT'
-  | 'NEW_SUPPORT'
+  | 'NEW_POST_RESPONSE'
   | 'NEW_STATUS_REACTION'
   | 'FOLLOW_REQUEST_RECEIVED'
   | 'FOLLOW_REQUEST_ACCEPTED';
@@ -153,6 +153,8 @@ export interface Notification {
   actor: UserSummary;
   type: NotificationType;
   postId: string | null;
+  statusId: string | null;
+  followRequestId: string | null;
   read: boolean;
   createdAt: string;
 }
