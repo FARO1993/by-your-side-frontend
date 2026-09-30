@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
@@ -8,18 +9,28 @@ const api = vi.hoisted(() => ({
   getNotifications: vi.fn(),
   getUnreadCount: vi.fn(),
   markAllAsRead: vi.fn(),
+  markNotificationRead: vi.fn(),
+  acceptFollowRequest: vi.fn(),
+  rejectFollowRequest: vi.fn(),
 }));
 
 const inbox = vi.hoisted(() => ({
   notificationUnread: 0,
   setNotificationUnread: vi.fn(),
   subscribe: vi.fn<(listener: (notification: Notification) => void) => () => void>(() => () => {}),
+  remember: vi.fn(),
 }));
 
 vi.mock('../api/notifications', () => ({
   getNotifications: api.getNotifications,
   getUnreadCount: api.getUnreadCount,
   markAllAsRead: api.markAllAsRead,
+  markNotificationRead: api.markNotificationRead,
+}));
+
+vi.mock('../api/followRequests', () => ({
+  acceptFollowRequest: api.acceptFollowRequest,
+  rejectFollowRequest: api.rejectFollowRequest,
 }));
 
 vi.mock('../context/notificationUnreadContext', () => ({
@@ -34,6 +45,8 @@ function note(overrides: Partial<Notification> = {}): Notification {
     actor: { id: 'actor-1', username: 'facu', displayName: 'Facu Test', avatarUrl: null },
     type: 'NEW_FOLLOWER',
     postId: null,
+    statusId: null,
+    followRequestId: null,
     read: false,
     createdAt: new Date().toISOString(),
     ...overrides,
@@ -61,6 +74,10 @@ function PostProbe() {
   return <p>Post {postId}</p>;
 }
 
+function FeedProbe() {
+  return <p>Inicio</p>;
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/notifications']}>
@@ -68,6 +85,7 @@ function renderPage() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile/:userId" element={<ProfileProbe />} />
         <Route path="/posts/:postId" element={<PostProbe />} />
+        <Route path="/feed" element={<FeedProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -82,9 +100,14 @@ describe('NotificationsPage', () => {
     inbox.setNotificationUnread.mockReset();
     inbox.subscribe.mockReset();
     inbox.subscribe.mockImplementation(() => () => {});
+    inbox.remember.mockReset();
     api.getNotifications.mockResolvedValue(page([]));
     api.getUnreadCount.mockResolvedValue(0);
     api.markAllAsRead.mockResolvedValue(undefined);
+    api.markNotificationRead.mockReset();
+    api.markNotificationRead.mockResolvedValue(note({ read: true }));
+    api.acceptFollowRequest.mockReset();
+    api.rejectFollowRequest.mockReset();
   });
 
   it('renders the list with the real action copy and a vertical header', async () => {
@@ -254,14 +277,116 @@ describe('NotificationsPage', () => {
       push(
         note({
           id: 'live',
-          type: 'NEW_SUPPORT',
+          type: 'NEW_POST_RESPONSE',
           postId: 'post-3',
           actor: { id: 'ana', username: 'ana', displayName: 'Ana', avatarUrl: null },
         }),
       );
     });
 
-    expect(await screen.findByText(/te hizo saber que está con vos/)).toBeInTheDocument();
+    expect(await screen.findByText(/respondió a tu publicación/)).toBeInTheDocument();
     expect(api.getNotifications).toHaveBeenCalledOnce();
+
+    act(() => {
+      push(note({ id: 'n1', read: true }));
+    });
+    expect(screen.getAllByRole('link', { name: /Facu Test/ })).toHaveLength(1);
+  });
+
+  it('marks one notification as read and opens the post', async () => {
+    const user = userEvent.setup();
+    inbox.notificationUnread = 5;
+    api.getNotifications.mockResolvedValue(
+      page([note({ type: 'NEW_POST_RESPONSE', postId: 'post-9', read: false })]),
+    );
+    renderPage();
+
+    await user.click(await screen.findByRole('link', { name: /respondió a tu publicación/ }));
+
+    expect(api.markNotificationRead).toHaveBeenCalledWith('n1');
+    expect(inbox.setNotificationUnread).toHaveBeenCalledWith(4);
+    expect(await screen.findByText('Post post-9')).toBeInTheDocument();
+  });
+
+  it('does not decrement the unread count when the notification is already read', async () => {
+    const user = userEvent.setup();
+    inbox.notificationUnread = 5;
+    api.getNotifications.mockResolvedValue(page([note({ read: true })]));
+    renderPage();
+
+    await user.click(await screen.findByRole('link', { name: /Leída/ }));
+
+    expect(api.markNotificationRead).not.toHaveBeenCalled();
+    expect(inbox.setNotificationUnread).not.toHaveBeenCalled();
+  });
+
+  it('restores the unread notification when mark-one fails', async () => {
+    const user = userEvent.setup();
+    inbox.notificationUnread = 5;
+    api.markNotificationRead.mockRejectedValue(new Error('offline'));
+    api.getNotifications.mockResolvedValue(page([note({ type: 'NEW_POST_RESPONSE', postId: null })]));
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /respondió a tu publicación/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos marcar esa novedad como leída.');
+    expect(screen.getByRole('button', { name: /Sin leer/ })).toBeInTheDocument();
+    expect(inbox.setNotificationUnread).toHaveBeenLastCalledWith(5);
+  });
+
+  it('opens the feed for a status reaction and does not invent a status route', async () => {
+    const user = userEvent.setup();
+    api.getNotifications.mockResolvedValue(
+      page([note({ type: 'NEW_STATUS_REACTION', statusId: 'status-1', read: true })]),
+    );
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: /reaccionó a tu estado/ });
+    expect(link).toHaveAttribute('href', '/feed');
+    await user.click(link);
+    expect(await screen.findByText('Inicio')).toBeInTheDocument();
+  });
+
+  it('opens a follow request profile without accepting it', async () => {
+    const user = userEvent.setup();
+    api.getNotifications.mockResolvedValue(
+      page([
+        note({
+          type: 'FOLLOW_REQUEST_RECEIVED',
+          followRequestId: 'request-1',
+          read: true,
+        }),
+      ]),
+    );
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Aceptar' })).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: /quiere acompañarte/ }));
+
+    expect(api.acceptFollowRequest).not.toHaveBeenCalled();
+    expect(await screen.findByText('Perfil actor-1')).toBeInTheDocument();
+  });
+
+  it('retires follow request actions when the request is no longer pending', async () => {
+    const user = userEvent.setup();
+    const error = new AxiosError('conflict');
+    error.response = { status: 409, data: {}, statusText: 'Conflict', headers: {}, config: {} as never };
+    api.rejectFollowRequest.mockRejectedValue(error);
+    api.getNotifications.mockResolvedValue(
+      page([
+        note({
+          type: 'FOLLOW_REQUEST_RECEIVED',
+          followRequestId: 'request-1',
+          read: true,
+        }),
+      ]),
+    );
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Rechazar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Esa solicitud ya no está pendiente.');
+    expect(screen.getByRole('link', { name: /quiere acompañarte/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Aceptar' })).not.toBeInTheDocument();
   });
 });
