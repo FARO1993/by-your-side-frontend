@@ -1,43 +1,94 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { Search } from 'lucide-react';
+import { DISCOVER_PAGE_SIZE, discoverUsers } from '../api/users';
 import type { DiscoverUser } from '../api/types';
-import { filterPeople, getDiscoverPeople } from '../services/discoverService';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
-import { EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
+import { Button, EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
+const SEARCH_DEBOUNCE_MS = 300;
 const LOAD_ERROR = 'No se pudo cargar la lista de personas.';
+const SEARCH_ERROR = 'No pudimos buscar personas.';
+const MORE_ERROR = 'No pudimos cargar más personas.';
+const INVALID_QUERY = 'Esa búsqueda no es válida.';
+
+type DiscoverView = {
+  query: string;
+  people: DiscoverUser[];
+  last: boolean;
+  page: number;
+};
 
 export default function DiscoverPage() {
-  const [people, setPeople] = useState<DiscoverUser[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [requestId, setRequestId] = useState(0);
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
+  const search = debouncedQuery.trim();
+  const [view, setView] = useState<DiscoverView | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState(LOAD_ERROR);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    getDiscoverPeople()
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    discoverUsers({ q: search || undefined, page: 0, size: DISCOVER_PAGE_SIZE, signal: controller.signal })
       .then((page) => {
-        if (cancelled) return;
-        setPeople(page.content);
-        setFailed(false);
+        if (controller.signal.aborted) return;
+        setView({
+          query: search,
+          people: dedupePeople(page.content),
+          last: page.last,
+          page: page.number,
+        });
+        setStatus('ready');
+        setMoreError(null);
       })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || isCanceled(error)) return;
+        setStatus('error');
+        setErrorMessage(discoverErrorMessage(error, search ? SEARCH_ERROR : LOAD_ERROR));
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [requestId]);
+    return () => controller.abort();
+  }, [search, retryToken]);
 
-  const loading = people === null && !failed;
-  const visiblePeople = people ? filterPeople(people, query) : [];
+  const current = view?.query === search ? view : null;
+  const loading = current === null && status !== 'error';
 
-  function retry() {
-    setPeople(null);
-    setFailed(false);
-    setRequestId((current) => current + 1);
+  async function loadMore() {
+    if (!current || current.last || moreLoading) return;
+    const signal = abortRef.current?.signal;
+    setMoreLoading(true);
+    setMoreError(null);
+    try {
+      const page = await discoverUsers({
+        q: search || undefined,
+        page: current.page + 1,
+        size: DISCOVER_PAGE_SIZE,
+        signal,
+      });
+      if (signal?.aborted) return;
+      setView((previous) => {
+        if (!previous || previous.query !== search) return previous;
+        return {
+          query: search,
+          people: dedupePeople([...previous.people, ...page.content]),
+          last: page.last,
+          page: page.number,
+        };
+      });
+    } catch (error: unknown) {
+      if (signal?.aborted || isCanceled(error)) return;
+      setMoreError(discoverErrorMessage(error, MORE_ERROR));
+    } finally {
+      if (!signal?.aborted) setMoreLoading(false);
+    }
   }
 
   return (
@@ -64,22 +115,41 @@ export default function DiscoverPage() {
 
       <section>
         <SectionTitle>Personas por acá</SectionTitle>
-        {loading ? <DiscoverSkeleton /> : null}
-        {failed ? (
-          <ErrorState className="mt-3" description={LOAD_ERROR} onRetry={retry} />
+        {loading ? <DiscoverSkeleton label={search ? 'Buscando personas' : 'Cargando personas'} /> : null}
+        {status === 'error' && current === null ? (
+          <ErrorState className="mt-3" description={errorMessage} onRetry={() => setRetryToken((currentToken) => currentToken + 1)} />
         ) : null}
-        {!loading && !failed && people && people.length === 0 ? (
-          <EmptyState className="mt-3 px-6 py-8" title="No hay personas para mostrar por ahora." />
+        {current && current.people.length === 0 ? (
+          <EmptyState
+            className="mt-3 px-6 py-8"
+            title={search ? 'No encontramos personas con esa búsqueda.' : 'Todavía no encontramos más personas para mostrarte.'}
+            action={
+              search ? (
+                <Button type="button" size="sm" variant="outline" onClick={() => setQuery('')}>
+                  Limpiar búsqueda
+                </Button>
+              ) : null
+            }
+          />
         ) : null}
-        {!loading && !failed && people && people.length > 0 && visiblePeople.length === 0 ? (
-          <EmptyState className="mt-3 px-6 py-8" title="No encontramos a nadie con ese nombre en esta lista." />
-        ) : null}
-        {!loading && !failed && visiblePeople.length > 0 ? (
+        {current && current.people.length > 0 ? (
           <ul className="mt-3 space-y-3">
-            {visiblePeople.map((person) => (
+            {current.people.map((person) => (
               <PersonRow key={person.id} person={person} />
             ))}
           </ul>
+        ) : null}
+        {current && !current.last ? (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <Button type="button" variant="outline" disabled={moreLoading} onClick={() => void loadMore()}>
+              {moreLoading ? 'Cargando…' : 'Cargar más'}
+            </Button>
+            {moreError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {moreError}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </section>
     </div>
@@ -102,6 +172,7 @@ function PersonRow({ person }: { person: DiscoverUser }) {
             <span className="min-w-0">
               <span className="block truncate font-medium text-foreground">{displayName}</span>
               <span className="block truncate text-sm text-muted-foreground">@{person.username}</span>
+              {person.available ? <span className="mt-1 block text-xs text-listening-strong">Disponible ahora</span> : null}
             </span>
           </span>
           {bio ? <span className="mt-3 line-clamp-2 text-sm leading-relaxed text-foreground/80">{bio}</span> : null}
@@ -117,9 +188,9 @@ function PersonRow({ person }: { person: DiscoverUser }) {
   );
 }
 
-function DiscoverSkeleton() {
+function DiscoverSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" aria-label="Cargando personas" className="mt-3 space-y-3">
+    <div role="status" aria-label={label} className="mt-3 space-y-3">
       {[0, 1, 2].map((item) => (
         <div key={item} className="rounded-2xl bg-card p-4 shadow-soft">
           <div className="flex items-start gap-3">
@@ -135,4 +206,22 @@ function DiscoverSkeleton() {
       ))}
     </div>
   );
+}
+
+function dedupePeople(people: DiscoverUser[]): DiscoverUser[] {
+  const seen = new Set<string>();
+  return people.filter((person) => {
+    if (seen.has(person.id)) return false;
+    seen.add(person.id);
+    return true;
+  });
+}
+
+function isCanceled(error: unknown): boolean {
+  return axios.isCancel(error) || (axios.isAxiosError(error) && error.code === 'ERR_CANCELED');
+}
+
+function discoverErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error) && error.response?.status === 400) return INVALID_QUERY;
+  return fallback;
 }
