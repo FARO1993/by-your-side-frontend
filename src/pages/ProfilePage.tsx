@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import { CalendarDays, MessageCircle } from 'lucide-react';
 import { getOrCreateConversation } from '../api/chat';
-import { getStatusFeed } from '../api/statuses';
+import { getUserStatus, type UserStatusView } from '../api/statuses';
 import type { CompanionPreferenceType, Post, PublicUserProfile, Status } from '../api/types';
 import {
   getCompanionPreferences,
@@ -10,6 +11,7 @@ import {
   getPublicProfile,
   getUserPosts,
   replaceCompanionPreferences,
+  updateProfile,
   uploadAvatar,
   type PublicAvailabilityView,
 } from '../api/users';
@@ -18,9 +20,10 @@ import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
 import PostCard from '../components/PostCard';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
-import { Badge, Button, Card, EmptyState, ErrorState } from '../components/byourside/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
 import { companionFailure, PREFERENCE_LABEL, PREFERENCE_ORDER, PUBLIC_AVAILABILITY_LABEL } from '../lib/companion';
+import { profileUpdatePayload } from '../lib/profile';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
 export default function ProfilePage() {
@@ -42,21 +45,32 @@ export default function ProfilePage() {
   const [preferenceSaved, setPreferenceSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [bioDraft, setBioDraft] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [tab, setTab] = useState<'posts' | 'presence'>('posts');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    Promise.all([getPublicProfile(userId), getUserPosts(userId), getStatusFeed().catch(() => [])])
-      .then(([profileData, postsPage, statuses]) => {
+    Promise.all([
+      getPublicProfile(userId),
+      getUserPosts(userId),
+      getUserStatus(userId).catch((): UserStatusView => ({ kind: 'hidden' })),
+    ])
+      .then(([profileData, postsPage, statusView]) => {
         if (cancelled) return;
         setFailedUserId(null);
+        setEditing(false);
         setSnapshot({
           userId,
           profile: profileData,
           posts: postsPage.content,
-          latestStatus: statuses.find((status) => status.user.id === profileData.id) ?? null,
+          latestStatus: statusView.kind === 'active' ? statusView.status : null,
         });
       })
       .catch(() => {
@@ -192,6 +206,41 @@ export default function ProfilePage() {
     }
   }
 
+  function startEdit() {
+    if (!profile) return;
+    setNameDraft(profile.displayName ?? '');
+    setBioDraft(profile.bio ?? '');
+    setNameError(null);
+    setProfileError(null);
+    setEditing(true);
+  }
+
+  async function saveProfile() {
+    const payload = profileUpdatePayload({ displayName: nameDraft, bio: bioDraft });
+    if (!payload.ok) {
+      setNameError(payload.message);
+      setProfileError(null);
+      return;
+    }
+    setSavingProfile(true);
+    setNameError(null);
+    setProfileError(null);
+    try {
+      const saved = await updateProfile(payload.body);
+      setSnapshot((prev) =>
+        prev && prev.profile.id === profileId
+          ? { ...prev, profile: { ...prev.profile, displayName: saved.displayName, bio: saved.bio } }
+          : prev,
+      );
+      setEditing(false);
+    } catch (saveError) {
+      const message = axios.isAxiosError(saveError) ? saveError.response?.data?.message : null;
+      setProfileError(typeof message === 'string' && message.trim() ? message : 'No pudimos guardar el perfil.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   function openAvatarPicker() {
     fileInputRef.current?.click();
   }
@@ -236,9 +285,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <Badge tone={moodBadge?.tone ?? 'neutral'} className="mt-4 px-3 py-1 text-sm">
-            {moodBadge?.label ?? 'Sin estado reciente'}
-          </Badge>
+          {moodBadge ? (
+            <Badge tone={moodBadge.tone} className="mt-4 px-3 py-1 text-sm">
+              {moodBadge.label}
+            </Badge>
+          ) : null}
 
           {bio ? <p className="mt-3 max-w-prose text-base leading-relaxed text-foreground">{bio}</p> : null}
 
@@ -271,8 +322,8 @@ export default function ProfilePage() {
 
           <div className="mt-4 flex gap-2">
             {isOwn ? (
-              <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={openAvatarPicker}>
-                {uploading ? 'Subiendo…' : 'Editar perfil'}
+              <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={startEdit}>
+                Editar perfil
               </Button>
             ) : (
               <>
@@ -292,6 +343,27 @@ export default function ProfilePage() {
               </>
             )}
           </div>
+
+          {editing ? (
+            <form
+              className="mt-4 space-y-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveProfile();
+              }}
+            >
+              <TextField label="Nombre" value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} error={nameError ?? undefined} />
+              <TextArea label="Bio" rows={3} value={bioDraft} onChange={(event) => setBioDraft(event.target.value)} />
+              {profileError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {profileError}
+                </p>
+              ) : null}
+              <Button type="submit" size="sm" variant="outline" disabled={savingProfile}>
+                {savingProfile ? 'Guardando…' : 'Guardar cambios'}
+              </Button>
+            </form>
+          ) : null}
 
           <p className="mt-4 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{profile.followersCount}</span> te acompañan
