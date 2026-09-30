@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -8,7 +9,8 @@ const api = vi.hoisted(() => ({
   getPublicProfile: vi.fn(),
   getUserPosts: vi.fn(),
   uploadAvatar: vi.fn(),
-  getStatusFeed: vi.fn(),
+  getUserStatus: vi.fn(),
+  updateProfile: vi.fn(),
   getPublicAvailability: vi.fn(),
   getCompanionPreferences: vi.fn(),
   replaceCompanionPreferences: vi.fn(),
@@ -32,13 +34,14 @@ vi.mock('../api/users', () => ({
   getPublicProfile: api.getPublicProfile,
   getUserPosts: api.getUserPosts,
   uploadAvatar: api.uploadAvatar,
+  updateProfile: api.updateProfile,
   getPublicAvailability: api.getPublicAvailability,
   getCompanionPreferences: api.getCompanionPreferences,
   replaceCompanionPreferences: api.replaceCompanionPreferences,
 }));
 
 vi.mock('../api/statuses', () => ({
-  getStatusFeed: api.getStatusFeed,
+  getUserStatus: api.getUserStatus,
 }));
 
 vi.mock('../api/chat', () => ({
@@ -129,7 +132,8 @@ describe('ProfilePage', () => {
     auth.current.logout = vi.fn();
     api.getPublicProfile.mockReset();
     api.getUserPosts.mockReset();
-    api.getStatusFeed.mockReset();
+    api.getUserStatus.mockReset();
+    api.updateProfile.mockReset();
     api.getPublicAvailability.mockReset();
     api.getCompanionPreferences.mockReset();
     api.replaceCompanionPreferences.mockReset();
@@ -144,14 +148,14 @@ describe('ProfilePage', () => {
       size: 20,
       last: true,
     });
-    api.getStatusFeed.mockResolvedValue([]);
+    api.getUserStatus.mockResolvedValue({ kind: 'none' });
     api.getPublicAvailability.mockResolvedValue({ kind: 'none' });
     api.getCompanionPreferences.mockResolvedValue([]);
     api.getPublicProfile.mockResolvedValue(profile());
   });
 
   it('renders own identity from the server, mood, bio and quiet metrics', async () => {
-    api.getStatusFeed.mockResolvedValue([status('me', 'NEED_DISTRACTION')]);
+    api.getUserStatus.mockResolvedValue({ kind: 'active', status: status('me', 'NEED_DISTRACTION') });
     localStorage.setItem(
       'bys.profileOverlay.me',
       JSON.stringify({ displayName: 'Nombre local', bio: 'Bio local', receivedPresence: 8 }),
@@ -183,7 +187,8 @@ describe('ProfilePage', () => {
     renderProfile();
 
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
-    expect(screen.getByText('Sin estado reciente')).toBeInTheDocument();
+    expect(screen.queryByText('Sin estado reciente')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no tiene estado/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/todavía no agregó una bio/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Me gusta escuchar.')).not.toBeInTheDocument();
   });
@@ -251,7 +256,7 @@ describe('ProfilePage', () => {
         followingCount: 3,
       }),
     );
-    api.getStatusFeed.mockResolvedValue([status('other', 'HERE_FOR_SOMEONE')]);
+    api.getUserStatus.mockResolvedValue({ kind: 'active', status: status('other', 'HERE_FOR_SOMEONE') });
 
     renderProfile('/profile/other');
 
@@ -388,5 +393,135 @@ describe('ProfilePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos guardar cómo solés estar.');
     expect(screen.getByRole('button', { name: 'Escuchar' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Conversar' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('reloads the current status instead of keeping the previous one', async () => {
+    api.getUserStatus.mockResolvedValue({ kind: 'active', status: status('me', 'NEED_DISTRACTION') });
+    const view = renderProfile();
+    expect(await screen.findByText('Necesito distraerme')).toBeInTheDocument();
+    view.unmount();
+
+    api.getUserStatus.mockResolvedValue({ kind: 'none' });
+    renderProfile();
+    expect(await screen.findByRole('heading', { name: 'Ana' })).toBeInTheDocument();
+    expect(screen.queryByText('Necesito distraerme')).not.toBeInTheDocument();
+    expect(api.getUserStatus).toHaveBeenCalledTimes(2);
+    expect(api.getUserStatus).toHaveBeenCalledWith('me');
+  });
+
+  it('hides the status when the endpoint says it is inaccessible', async () => {
+    api.getUserStatus.mockResolvedValue({ kind: 'hidden' });
+    renderProfile('/profile/other');
+
+    expect(await screen.findByRole('heading', { name: 'Ana' })).toBeInTheDocument();
+    expect(screen.queryByText('Sin estado reciente')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no tiene estado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Necesito distraerme')).not.toBeInTheDocument();
+  });
+
+  it('shows a private profile status only when the status endpoint returns it', async () => {
+    api.getPublicProfile.mockResolvedValue(profile({ id: 'other', username: 'luz', displayName: 'Luz', bio: null }));
+    api.getUserStatus.mockResolvedValue({ kind: 'active', status: status('other', 'WELL') });
+
+    renderProfile('/profile/other');
+
+    expect(await screen.findByText('Estoy bien')).toBeInTheDocument();
+    expect(api.getUserStatus).toHaveBeenCalledWith('other');
+  });
+
+  it('shows the profile error when the profile itself cannot be loaded', async () => {
+    api.getPublicProfile.mockRejectedValue(new Error('missing'));
+    renderProfile();
+
+    expect(await screen.findByText('No se pudo cargar este perfil')).toBeInTheDocument();
+    expect(screen.queryByText(/no tiene estado/i)).not.toBeInTheDocument();
+  });
+
+  it('trims the display name and keeps internal spaces', async () => {
+    api.updateProfile.mockResolvedValue({ ...account('me'), displayName: 'Ana  Luz', bio: 'Me gusta escuchar.' });
+    renderProfile();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const name = screen.getByLabelText('Nombre');
+    await userEvent.clear(name);
+    await userEvent.type(name, '  Ana  Luz  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ displayName: 'Ana  Luz', bio: 'Me gusta escuchar.' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Ana  Luz');
+  });
+
+  it('does not send a blank display name', async () => {
+    renderProfile();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const name = screen.getByLabelText('Nombre');
+    await userEvent.clear(name);
+    await userEvent.type(name, '   ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(screen.getByText('El nombre no puede quedar vacío.')).toBeInTheDocument();
+    expect(api.updateProfile).not.toHaveBeenCalled();
+    expect(name).toHaveValue('   ');
+  });
+
+  it('trims the bio and clears it when only spaces remain', async () => {
+    api.updateProfile.mockResolvedValueOnce({ ...account('me'), displayName: 'Ana', bio: 'escuchar' });
+    renderProfile();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const bio = screen.getByLabelText('Bio');
+    await userEvent.clear(bio);
+    await userEvent.type(bio, '  escuchar  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ displayName: 'Ana', bio: 'escuchar' }));
+
+    api.updateProfile.mockResolvedValueOnce({ ...account('me'), displayName: 'Ana', bio: null });
+    await userEvent.click(screen.getByRole('button', { name: 'Editar perfil' }));
+    const cleared = screen.getByLabelText('Bio');
+    await userEvent.clear(cleared);
+    await userEvent.type(cleared, '   ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(api.updateProfile).toHaveBeenLastCalledWith({ displayName: 'Ana', bio: '' }));
+    expect(screen.queryByText('escuchar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Me gusta escuchar.')).not.toBeInTheDocument();
+  });
+
+  it('shows the saved profile from the response, not the typed text', async () => {
+    api.updateProfile.mockResolvedValue({ ...account('me'), displayName: 'Ana Luz', bio: 'Bio guardada' });
+    renderProfile();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const name = screen.getByLabelText('Nombre');
+    await userEvent.clear(name);
+    await userEvent.type(name, '  Ana  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByRole('heading', { name: 'Ana Luz' })).toBeInTheDocument();
+    expect(screen.getByText('Bio guardada')).toBeInTheDocument();
+  });
+
+  it('keeps the form when saving the profile fails', async () => {
+    const error = new AxiosError('invalid');
+    error.response = {
+      status: 400,
+      data: { message: 'displayName cannot be blank' },
+      statusText: 'Bad Request',
+      headers: {},
+      config: {} as never,
+    };
+    api.updateProfile.mockRejectedValue(error);
+    renderProfile();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar perfil' }));
+    const name = screen.getByLabelText('Nombre');
+    await userEvent.clear(name);
+    await userEvent.type(name, '  Ana  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('displayName cannot be blank');
+    expect(name).toHaveValue('  Ana  ');
+    expect(screen.getByRole('heading', { name: 'Ana' })).toBeInTheDocument();
   });
 });

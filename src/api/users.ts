@@ -76,6 +76,11 @@ export async function discoverUsers({
   return response.data;
 }
 
+export async function updateProfile(payload: { displayName: string; bio: string }): Promise<User> {
+  const response = await apiClient.patch<User>('/api/users/me', payload);
+  return response.data;
+}
+
 export async function uploadAvatar(file: File): Promise<User> {
   const formData = new FormData();
   formData.append('file', file);
