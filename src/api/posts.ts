@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Page, Post, CreatePostRequest, SupportSummary } from './types';
+import type { Page, Post, CreatePostRequest, PostResponseSummary, PostResponseType } from './types';
 
 export async function getFeed(page = 0, size = 20): Promise<Page<Post>> {
   const response = await apiClient.get<Page<Post>>('/api/posts/feed', {
@@ -13,13 +13,13 @@ export async function createPost(data: CreatePostRequest): Promise<Post> {
   return response.data;
 }
 
-export async function addSupport(postId: string): Promise<SupportSummary> {
-  const response = await apiClient.post<SupportSummary>(`/api/posts/${postId}/support`);
+export async function setPostResponse(postId: string, type: PostResponseType): Promise<PostResponseSummary> {
+  const response = await apiClient.put<PostResponseSummary>(`/api/posts/${postId}/response`, { type });
   return response.data;
 }
 
-export async function removeSupport(postId: string): Promise<SupportSummary> {
-  const response = await apiClient.delete<SupportSummary>(`/api/posts/${postId}/support`);
+export async function deletePostResponse(postId: string): Promise<PostResponseSummary> {
+  const response = await apiClient.delete<PostResponseSummary>(`/api/posts/${postId}/response`);
   return response.data;
 }
 

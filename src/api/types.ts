@@ -48,6 +48,14 @@ export interface UserSummary {
   avatarUrl: string | null;
 }
 
+export type PostResponseType =
+  | 'WITH_YOU'
+  | 'NOT_ALONE'
+  | 'HUG'
+  | 'READING'
+  | 'TELL_ME_MORE'
+  | 'LISTENING';
+
 export interface Post {
   id: string;
   author: UserSummary;
@@ -56,8 +64,16 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
   followedByCurrentUser: boolean;
-  supportCount: number;
-  supportedByCurrentUser: boolean;
+  presenceCount: number;
+  listeningCount: number;
+  currentUserResponseType: PostResponseType | null;
+}
+
+export interface PostResponseSummary {
+  postId: string;
+  type: PostResponseType | null;
+  presenceCount: number;
+  listeningCount: number;
 }
 
 // Espejo de Page<T> de Spring Data (lo que devuelve GET /api/posts/feed)
@@ -122,12 +138,6 @@ export interface DiscoverUser {
   profileVisibility: ProfileVisibility;
   followState: DiscoverFollowState;
   available: boolean;
-}
-
-export interface SupportSummary {
-  postId: string;
-  supportCount: number;
-  supportedByCurrentUser: boolean;
 }
 
 export type NotificationType =
