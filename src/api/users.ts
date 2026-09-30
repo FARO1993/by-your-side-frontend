@@ -53,9 +53,25 @@ export async function getUserPosts(userId: string, page = 0, size = 20): Promise
   return response.data;
 }
 
-export async function discoverUsers(page = 0, size = 20): Promise<Page<DiscoverUser>> {
+export const DISCOVER_PAGE_SIZE = 20;
+
+export async function discoverUsers({
+  q,
+  page = 0,
+  size = DISCOVER_PAGE_SIZE,
+  signal,
+}: {
+  q?: string;
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+} = {}): Promise<Page<DiscoverUser>> {
+  const params: { page: number; size: number; q?: string } = { page, size };
+  const query = q?.trim();
+  if (query) params.q = query;
   const response = await apiClient.get<Page<DiscoverUser>>('/api/users/discover', {
-    params: { page, size },
+    params,
+    signal,
   });
   return response.data;
 }

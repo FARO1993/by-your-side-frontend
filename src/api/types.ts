@@ -91,6 +91,8 @@ export interface FollowResponse {
   followerId: string;
   followingId: string;
   createdAt: string;
+  followState: DiscoverFollowState;
+  requestId: string | null;
 }
 
 export type CompanionPreferenceType = 'LISTEN' | 'TALK' | 'DISTRACT';
@@ -119,6 +121,7 @@ export interface DiscoverUser {
   avatarUrl: string | null;
   profileVisibility: ProfileVisibility;
   followState: DiscoverFollowState;
+  available: boolean;
 }
 
 export interface SupportSummary {

@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError } from 'axios';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DiscoverUser } from '../api/types';
+import type { DiscoverUser, Page } from '../api/types';
 
 const api = vi.hoisted(() => ({
   discoverUsers: vi.fn(),
@@ -11,6 +12,7 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('../api/users', () => ({
+  DISCOVER_PAGE_SIZE: 20,
   discoverUsers: api.discoverUsers,
 }));
 
@@ -30,6 +32,19 @@ function person(overrides: Partial<DiscoverUser> = {}): DiscoverUser {
     avatarUrl: null,
     profileVisibility: 'PUBLIC',
     followState: 'NONE',
+    available: false,
+    ...overrides,
+  };
+}
+
+function result(content: DiscoverUser[], overrides: Partial<Page<DiscoverUser>> = {}): Page<DiscoverUser> {
+  return {
+    content,
+    totalElements: content.length,
+    totalPages: 1,
+    number: 0,
+    size: 20,
+    last: true,
     ...overrides,
   };
 }
@@ -50,93 +65,199 @@ describe('DiscoverPage', () => {
     api.discoverUsers.mockReset();
     api.followUser.mockReset();
     api.unfollowUser.mockReset();
-    api.followUser.mockResolvedValue(undefined);
+    api.followUser.mockResolvedValue({
+      followerId: 'me',
+      followingId: 'ana-id',
+      createdAt: '2026-09-20T12:00:00.000Z',
+      followState: 'FOLLOWING',
+      requestId: null,
+    });
+    vi.useRealTimers();
   });
 
-  it('renders identity, username and bio, and opens the profile', async () => {
-    api.discoverUsers.mockResolvedValue({ content: [person()], totalElements: 1, totalPages: 1, number: 0, size: 20, last: true });
+  it('renders browse results and opens the profile', async () => {
+    api.discoverUsers.mockResolvedValue(result([person()]));
     const user = userEvent.setup();
     renderDiscover();
 
     expect(await screen.findByRole('heading', { name: 'Descubrir' })).toBeInTheDocument();
-    expect(screen.getByText('Personas con quienes podés conectar, sin apuro.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Personas por acá' })).toBeInTheDocument();
     expect(screen.getByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('@ana')).toBeInTheDocument();
     expect(screen.getByText('Me gusta escuchar.')).toBeInTheDocument();
-    expect(screen.queryByText('Podría hacerte bien acompañar.')).not.toBeInTheDocument();
-    expect(screen.queryByText(/personas compartiendo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Disponible ahora')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
-    expect(api.discoverUsers).toHaveBeenCalledWith(0, 20);
+    expect(api.discoverUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 0, size: 20 }));
+    expect(api.discoverUsers.mock.calls[0][0].q).toBeUndefined();
 
     await user.click(screen.getByRole('link', { name: /Ana/ }));
     expect(await screen.findByText('Perfil')).toBeInTheDocument();
   });
 
-  it('omits a missing bio without a placeholder', async () => {
-    api.discoverUsers.mockResolvedValue({
-      content: [person({ bio: '   ', profileVisibility: 'PRIVATE' })],
-      totalElements: 1,
-      totalPages: 1,
-      number: 0,
-      size: 20,
-      last: true,
-    });
+  it('shows a discreet availability signal only when the person is available', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([
+        person({ available: true }),
+        person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null, available: false }),
+      ]),
+    );
     renderDiscover();
 
-    expect(await screen.findByText('@ana')).toBeInTheDocument();
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.getAllByText('Disponible ahora')).toHaveLength(1);
+    expect(screen.queryByText(/puede escuchar/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps a private bio hidden while showing availability', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([person({ bio: null, profileVisibility: 'PRIVATE', available: true })]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Disponible ahora')).toBeInTheDocument();
     expect(screen.queryByText('Me gusta escuchar.')).not.toBeInTheDocument();
-    expect(screen.queryByText(/todavía no/i)).not.toBeInTheDocument();
   });
 
-  it('shows a sent request without calling follow again', async () => {
-    api.discoverUsers.mockResolvedValue({
-      content: [person({ followState: 'REQUESTED' })],
-      totalElements: 1,
-      totalPages: 1,
-      number: 0,
-      size: 20,
-      last: true,
-    });
+  it('shows request, follow and following states', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([
+        person({ followState: 'NONE' }),
+        person({ id: 'req-id', username: 'sol', displayName: 'Sol', bio: null, followState: 'REQUESTED' }),
+        person({ id: 'fol-id', username: 'luz', displayName: 'Luz', bio: null, followState: 'FOLLOWING' }),
+      ]),
+    );
     renderDiscover();
 
-    const requested = await screen.findByRole('button', { name: 'Solicitud enviada' });
-    expect(requested).toBeDisabled();
-    expect(requested).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.click(requested);
-    expect(api.followUser).not.toHaveBeenCalled();
+    expect(await screen.findByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Solicitud enviada' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Acompañás' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('filters the loaded list and uses a search-specific empty state', async () => {
-    api.discoverUsers.mockResolvedValue({
-      content: [person(), person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null })],
-      totalElements: 2,
-      totalPages: 1,
-      number: 0,
-      size: 20,
-      last: true,
+  it('turns a private follow into a sent request', async () => {
+    api.discoverUsers.mockResolvedValue(result([person({ profileVisibility: 'PRIVATE' })]));
+    api.followUser.mockResolvedValueOnce({
+      followerId: 'me',
+      followingId: 'ana-id',
+      createdAt: '2026-09-20T12:00:00.000Z',
+      followState: 'REQUESTED',
+      requestId: 'request-1',
     });
     const user = userEvent.setup();
     renderDiscover();
 
-    expect(await screen.findByText('Luz')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Buscar personas'), 'luz');
-    expect(screen.getByText('Luz')).toBeInTheDocument();
-    expect(screen.queryByText('Ana')).not.toBeInTheDocument();
-
-    await user.clear(screen.getByLabelText('Buscar personas'));
-    await user.type(screen.getByLabelText('Buscar personas'), 'nadie');
-    expect(screen.getByText('No encontramos a nadie con ese nombre en esta lista.')).toBeInTheDocument();
-    expect(screen.queryByText('Ya acompañás a todo el mundo por acá')).not.toBeInTheDocument();
-    expect(screen.queryByText('No hay personas para mostrar por ahora.')).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Acompañar' }));
+    expect(await screen.findByRole('button', { name: 'Solicitud enviada' })).toBeDisabled();
   });
 
-  it('shows the real empty list without claiming everyone is already accompanied', async () => {
-    api.discoverUsers.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20, last: true });
+  it('keeps the follow button when the request fails', async () => {
+    api.discoverUsers.mockResolvedValue(result([person()]));
+    api.followUser.mockRejectedValueOnce(new Error('down'));
+    const user = userEvent.setup();
     renderDiscover();
 
-    expect(await screen.findByText('No hay personas para mostrar por ahora.')).toBeInTheDocument();
-    expect(screen.queryByText('Ya acompañás a todo el mundo por acá')).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Acompañar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo completar la acción.');
+    expect(screen.getByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
+  });
+
+  it('searches on the server, replaces results, and returns to browse when cleared', async () => {
+    api.discoverUsers.mockResolvedValue(result([person()]));
+    renderDiscover();
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+
+    api.discoverUsers.mockResolvedValue(result([person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null })]));
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'luz' } });
+    expect(api.discoverUsers).not.toHaveBeenCalledWith(expect.objectContaining({ q: 'luz' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(screen.getByText('Luz')).toBeInTheDocument();
+    expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+    expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'luz', page: 0, size: 20 }));
+
+    api.discoverUsers.mockResolvedValue(result([]));
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'nadie' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(screen.getByText('No encontramos personas con esa búsqueda.')).toBeInTheDocument();
+
+    api.discoverUsers.mockResolvedValue(result([person()]));
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0, size: 20 }));
+    expect(api.discoverUsers.mock.calls.at(-1)?.[0].q).toBeUndefined();
+    vi.useRealTimers();
+  });
+
+  it('ignores a stale search response', async () => {
+    let resolveFirst: (value: Page<DiscoverUser>) => void = () => undefined;
+    api.discoverUsers.mockImplementation((options: { q?: string }) => {
+      if (options.q === 'fa') return new Promise<Page<DiscoverUser>>((resolve) => { resolveFirst = resolve; });
+      if (options.q === 'fac') return Promise.resolve(result([person({ id: 'fac-id', username: 'facu', displayName: 'Facu', bio: null })]));
+      return Promise.resolve(result([person()]));
+    });
+    renderDiscover();
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'fa' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'fac' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(screen.getByText('Facu')).toBeInTheDocument();
+
+    resolveFirst(result([person({ id: 'old-id', username: 'fabi', displayName: 'Fabi', bio: null })]));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByText('Fabi')).not.toBeInTheDocument();
+    expect(screen.getByText('Facu')).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('loads the next page without duplicates and hides the button on the last page', async () => {
+    api.discoverUsers
+      .mockResolvedValueOnce(result([person()], { last: false, totalPages: 2, totalElements: 2 }))
+      .mockResolvedValueOnce(result([
+        person(),
+        person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null }),
+      ], { number: 1, last: true, totalPages: 2, totalElements: 2 }));
+    const user = userEvent.setup();
+    renderDiscover();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cargar más' }));
+    expect(await screen.findByText('Luz')).toBeInTheDocument();
+    expect(screen.getAllByText('Ana')).toHaveLength(1);
+    expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, size: 20 }));
+    expect(screen.queryByRole('button', { name: 'Cargar más' })).not.toBeInTheDocument();
+  });
+
+  it('keeps loaded people when the next page fails', async () => {
+    api.discoverUsers.mockResolvedValueOnce(result([person()], { last: false })).mockRejectedValueOnce(new Error('down'));
+    const user = userEvent.setup();
+    renderDiscover();
+
+    await user.click(await screen.findByRole('button', { name: 'Cargar más' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar más personas.');
+    expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cargar más' })).toBeEnabled();
+  });
+
+  it('shows an empty browse state', async () => {
+    api.discoverUsers.mockResolvedValue(result([]));
+    renderDiscover();
+
+    expect(await screen.findByText('Todavía no encontramos más personas para mostrarte.')).toBeInTheDocument();
   });
 
   it('shows the load error and can retry', async () => {
@@ -145,16 +266,26 @@ describe('DiscoverPage', () => {
     renderDiscover();
 
     expect(await screen.findByText('No se pudo cargar la lista de personas.')).toBeInTheDocument();
-    api.discoverUsers.mockResolvedValueOnce({
-      content: [person()],
-      totalElements: 1,
-      totalPages: 1,
-      number: 0,
-      size: 20,
-      last: true,
-    });
+    api.discoverUsers.mockResolvedValueOnce(result([person()]));
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByText('Ana')).toBeInTheDocument();
+  });
+
+  it('shows a specific message for an invalid search', async () => {
+    api.discoverUsers.mockResolvedValue(result([person()]));
+    renderDiscover();
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    const error = new AxiosError('bad');
+    error.response = { status: 400, data: {}, statusText: 'Bad Request', headers: {}, config: {} as never };
+    api.discoverUsers.mockRejectedValueOnce(error);
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: '%%%' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(screen.getByText('Esa búsqueda no es válida.')).toBeInTheDocument();
+    expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('shows a loading skeleton before the list arrives', () => {
@@ -163,5 +294,19 @@ describe('DiscoverPage', () => {
 
     expect(screen.getByRole('status', { name: 'Cargando personas' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Acompañar' })).not.toBeInTheDocument();
+  });
+
+  it('resets to the first page when the query changes', async () => {
+    api.discoverUsers.mockResolvedValue(result([person()], { last: false }));
+    renderDiscover();
+    await screen.findByRole('button', { name: 'Cargar más' });
+    api.discoverUsers.mockResolvedValue(result([person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null })]));
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'luz' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'luz', page: 0 }));
+    vi.useRealTimers();
   });
 });

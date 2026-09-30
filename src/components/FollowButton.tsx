@@ -24,6 +24,7 @@ export default function FollowButton({
   className?: string;
 }) {
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
+  const [requestedState, setRequestedState] = useState(requested);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +36,12 @@ export default function FollowButton({
         await unfollowUser(userId);
         setIsFollowing(false);
       } else {
-        await followUser(userId);
-        setIsFollowing(true);
+        const result = await followUser(userId);
+        if (result?.followState === 'REQUESTED') {
+          setRequestedState(true);
+        } else {
+          setIsFollowing(true);
+        }
       }
     } catch {
       setError('No se pudo completar la acción.');
@@ -45,7 +50,7 @@ export default function FollowButton({
     }
   }
 
-  if (requested) {
+  if (requested || requestedState) {
     return (
       <div className={cn('inline-flex flex-col gap-1', fullWidth ? 'w-full items-stretch' : 'items-end', className)}>
         <Button type="button" size={size} fullWidth={fullWidth} variant="outline" disabled aria-disabled="true">
