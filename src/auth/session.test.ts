@@ -6,6 +6,8 @@ import { authStorage } from './authStorage';
 import { classifyVerifyError, loginErrorMessage, registerErrorMessage } from './apiError';
 import { AUTH_NOTICES, endSession, persistAuthResponse, refreshClient } from './session';
 import { welcomeStorage } from './welcomeStorage';
+import { draftKey, readDraft, writeDraft } from '../lib/drafts';
+import { clearLocalSession } from './session';
 import { authorizationHeader, installAdapter, requestBody } from '../test/http';
 import type { InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
@@ -316,5 +318,29 @@ describe('welcome seen', () => {
     welcomeStorage.consumeArm('user-a');
     expect(welcomeStorage.hasSeen('user-a')).toBe(false);
     expect(welcomeStorage.shouldShow('user-a')).toBe(true);
+  });
+});
+
+describe('drafts on session end', () => {
+  it('removes drafts on logout so they do not stay on a shared device', async () => {
+    writeDraft(draftKey('u1', 'chat:c1'), 'algo muy personal');
+    await endSession();
+    expect(readDraft(draftKey('u1', 'chat:c1'))).toBe('');
+  });
+
+  it('removes drafts after a password change or reset', () => {
+    writeDraft(draftKey('u1', 'create-post'), 'a');
+    clearLocalSession('password-changed');
+    expect(readDraft(draftKey('u1', 'create-post'))).toBe('');
+
+    writeDraft(draftKey('u1', 'create-post'), 'b');
+    clearLocalSession('password-reset');
+    expect(readDraft(draftKey('u1', 'create-post'))).toBe('');
+  });
+
+  it('keeps drafts when the session just expired, to resume after logging in', () => {
+    writeDraft(draftKey('u1', 'create-post'), 'lo retomo después');
+    clearLocalSession('expired');
+    expect(readDraft(draftKey('u1', 'create-post'))).toBe('lo retomo después');
   });
 });

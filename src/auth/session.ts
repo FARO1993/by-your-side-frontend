@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from 'axios';
 import { authStorage } from './authStorage';
 import { disconnectSocket, syncSocketAccessToken } from '../api/socket';
+import { clearAllDrafts } from '../lib/drafts';
 
 const NOTICE_KEY = 'byyourside.authNotice';
 
@@ -85,6 +86,9 @@ export function clearLocalSession(reason: SessionClearReason): void {
   refreshInFlight = null;
   authStorage.clear();
   disconnectSocket();
+  // Los borradores pueden ser muy personales: no los dejamos en el dispositivo
+  // al cerrar sesión. Si la sesión solo expiró, se conservan para retomar.
+  if (reason !== 'expired') clearAllDrafts();
 
   if (reason === 'expired') {
     expiryNotified = true;

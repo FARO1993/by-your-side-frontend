@@ -1,14 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useDraft } from '../hooks/useDraft';
+import { draftKey } from '../lib/drafts';
 import axios from 'axios';
 import { getComments, createComment } from '../api/comments';
 import type { Comment, ApiErrorResponse } from '../api/types';
 import { timeAgo } from '../lib/timeAgo';
 import Avatar from './Avatar';
+import { DraftNotice } from './byourside/draft-notice';
 import { Button } from './byourside/ui';
 
 export default function CommentList({ postId }: { postId: string }) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [content, setContent] = useState('');
+  const { user } = useAuth();
+  const { text: content, setText: setContent, discard, restored } = useDraft(draftKey(user?.id, `comment:${postId}`));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +71,7 @@ export default function CommentList({ postId }: { postId: string }) {
           Responder
         </Button>
       </form>
+      {restored ? <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discard} /> : null}
       {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
     </div>
   );
