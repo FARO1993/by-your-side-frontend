@@ -13,6 +13,7 @@ import { cn } from '../../lib/cn';
 import Avatar from '../Avatar';
 import { Button, IconButton } from './ui';
 import { Logo } from './logo';
+import { ThemeToggle } from './theme-toggle';
 
 export type AppShellRoute =
   | 'feed'
@@ -197,6 +198,7 @@ function DesktopNav({
           >
             <Heart className="size-5" />
           </IconButton>
+          <ThemeToggle />
           <Button size="sm" className="ml-2" onClick={() => onNavigate('create')}>
             <Plus className="size-4" />
             Compartir
@@ -245,6 +247,7 @@ function MobileTopBar({
         >
           <Heart className="size-5" />
         </IconButton>
+        <ThemeToggle />
       </div>
     </header>
   );
