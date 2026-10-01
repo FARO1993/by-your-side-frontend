@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
+import { useDraft } from '../../hooks/useDraft';
 import type { StatusMood } from '../../api/types';
 import { cn } from '../../lib/cn';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../../lib/visual';
 import Avatar from '../Avatar';
+import { DraftNotice } from './draft-notice';
 import { Button } from './ui';
 
 const CHECK_IN_MOODS: StatusMood[] = ['WELL', 'NEED_DISTRACTION', 'DIFFICULT_DAY'];
@@ -16,21 +18,30 @@ export function Composer({
   onSubmit,
   onMood,
   submitting = false,
+  draftKey = null,
 }: {
   authorName: string;
   avatarUrl?: string | null;
   onSubmit: (content: string) => Promise<void> | void;
   onMood?: (mood: StatusMood) => void;
   submitting?: boolean;
+  /** Clave de borrador (lib/drafts.ts). null = no guardar. */
+  draftKey?: string | null;
 }) {
-  const [content, setContent] = useState('');
+  const { text: content, setText: setContent, discard, restored } = useDraft(draftKey);
   const [mood, setMood] = useState<StatusMood | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!content.trim()) return;
-    await onSubmit(content.trim());
-    setContent('');
+    setSubmitError(null);
+    try {
+      await onSubmit(content.trim());
+      setContent('');
+    } catch {
+      setSubmitError('No pudimos compartirlo. Tu texto sigue acá, podés intentar de nuevo.');
+    }
   }
 
   return (
@@ -66,6 +77,14 @@ export function Composer({
             placeholder="¿Cómo venís hoy? Acá te leemos sin apuro…"
             className="w-full resize-none bg-transparent text-[0.975rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
+          {submitError ? (
+            <p role="alert" className="mb-2 text-xs font-medium text-destructive">
+              {submitError}
+            </p>
+          ) : null}
+          {draftKey ? (
+            <DraftNotice restored={restored} hasText={content.trim() !== ''} onDiscard={discard} className="mb-2" />
+          ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
             <p className="text-xs text-muted-foreground">Compartís con quienes te acompañan.</p>
             <Button type="submit" size="sm" disabled={!content.trim()} loading={submitting}>

@@ -35,3 +35,38 @@ describe('Composer check-in', () => {
     expect(onSubmit).toHaveBeenCalledWith('Hoy vengo bien');
   });
 });
+
+describe('Composer drafts', () => {
+  const key = 'byyourside.draft.u1.feed-composer';
+  const placeholder = '¿Cómo venís hoy? Acá te leemos sin apuro…';
+
+  it('restores an unsent draft and lets the user discard it', async () => {
+    const first = render(<Composer authorName="Ana" onSubmit={vi.fn()} draftKey={key} />);
+    await userEvent.type(screen.getByPlaceholderText(placeholder), 'Algo a medias');
+    expect(screen.getByText('Borrador guardado en este dispositivo.')).toBeInTheDocument();
+    first.unmount();
+
+    render(<Composer authorName="Ana" onSubmit={vi.fn()} draftKey={key} />);
+    expect(screen.getByPlaceholderText(placeholder)).toHaveValue('Algo a medias');
+    expect(screen.getByRole('status')).toHaveTextContent('Recuperamos lo que estabas escribiendo.');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }));
+    expect(screen.getByPlaceholderText(placeholder)).toHaveValue('');
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  it('clears the draft after publishing, but keeps it if publishing fails', async () => {
+    const failing = vi.fn().mockRejectedValue(new Error('offline'));
+    const first = render(<Composer authorName="Ana" onSubmit={failing} draftKey={key} />);
+    await userEvent.type(screen.getByPlaceholderText(placeholder), 'No lo pierdas');
+    await userEvent.click(screen.getByRole('button', { name: 'Compartir' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos compartirlo');
+    expect(screen.getByPlaceholderText(placeholder)).toHaveValue('No lo pierdas');
+    expect(localStorage.getItem(key)).not.toBeNull();
+    first.unmount();
+
+    render(<Composer authorName="Ana" onSubmit={vi.fn()} draftKey={key} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Compartir' }));
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+});

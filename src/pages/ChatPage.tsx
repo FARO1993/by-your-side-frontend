@@ -6,9 +6,12 @@ import { subscribeToUserQueue } from '../api/socket';
 import type { Conversation, Message } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { useChatNotifications } from '../context/ChatNotificationsContext';
+import { useDraft } from '../hooks/useDraft';
+import { draftKey } from '../lib/drafts';
 import { timeAgo } from '../lib/timeAgo';
 import { cn } from '../lib/cn';
 import Avatar from '../components/Avatar';
+import { DraftNotice } from '../components/byourside/draft-notice';
 import { ConversationList, MessagesChrome } from '../components/byourside/messages-chrome';
 import { Spinner } from '../components/byourside/ui';
 
@@ -20,7 +23,12 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<Conversation['otherUser'] | null>(null);
-  const [content, setContent] = useState('');
+  const {
+    text: content,
+    setText: setContent,
+    discard: discardDraft,
+    restored: draftRestored,
+  } = useDraft(conversationId ? draftKey(user?.id, `chat:${conversationId}`) : null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -150,6 +158,9 @@ export default function ChatPage() {
               <p role="alert" className="mb-2 text-sm text-destructive">
                 {sendError}
               </p>
+            ) : null}
+            {draftRestored ? (
+              <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discardDraft} className="mb-2 px-1" />
             ) : null}
             <div className="flex items-end gap-2">
               <textarea

@@ -7,6 +7,7 @@ import { getStatusFeed, setStatus } from '../api/statuses';
 import type { CompanionNeed, CompanionOffering, NeedType, OfferingType, Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { Composer } from '../components/byourside/composer';
+import { draftKey } from '../lib/drafts';
 import { HomePresencePulse } from '../components/byourside/home-presence-pulse';
 import { EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
 import { PostCardSkeleton } from '../components/byourside/post-skeleton';
@@ -178,6 +179,7 @@ export default function FeedPage() {
           onSubmit={handlePost}
           onMood={handleMood}
           submitting={submitting}
+          draftKey={draftKey(user.id, 'feed-composer')}
         />
       ) : null}
 
