@@ -74,6 +74,27 @@ describe('CompanionModePage', () => {
     api.listCompatibleOfferings.mockResolvedValue([]);
   });
 
+  it('explains the limits of accompanying before offering, and hides them once available', async () => {
+    renderPage();
+    expect(await screen.findByText('Antes de ofrecerte')).toBeInTheDocument();
+    expect(screen.getByText(/Acompañar no es hacer terapia/)).toBeInTheDocument();
+    expect(screen.getByText(/Podés cortar la charla cuando lo necesites/)).toBeInTheDocument();
+  });
+
+  it('does not repeat the limits while already available', async () => {
+    api.getMyOffering.mockResolvedValue(offering());
+    renderPage();
+    expect(await screen.findByText('Estás disponible')).toBeInTheDocument();
+    expect(screen.queryByText('Antes de ofrecerte')).not.toBeInTheDocument();
+  });
+
+  it('reminds that companions are community members, not professionals', async () => {
+    api.getMyNeed.mockResolvedValue(need());
+    api.listCompatibleOfferings.mockResolvedValue([candidate()]);
+    renderPage();
+    expect(await screen.findByText(/Son personas de la comunidad, no profesionales/)).toBeInTheDocument();
+  });
+
   it('starts without a need or an offering and does not search candidates', async () => {
     renderPage();
 
