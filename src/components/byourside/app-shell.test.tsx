@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { ThemeProvider } from '../../context/ThemeContext';
+import { ThemeProvider } from '../../context/ThemeProvider';
 import { THEME_STORAGE_KEY } from '../../lib/theme';
 import { AppShell } from './app-shell';
 
