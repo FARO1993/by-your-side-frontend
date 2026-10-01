@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, DoorOpen, Send } from 'lucide-react';
 import { unblockUser } from '../api/blocks';
@@ -17,7 +17,11 @@ import { DraftNotice } from '../components/byourside/draft-notice';
 import { ConversationList, MessagesChrome } from '../components/byourside/messages-chrome';
 import { Button, Spinner } from '../components/byourside/ui';
 import { ChatSafetyMenu, type ChatRelation } from '../components/safety/ChatSafetyMenu';
+import { CompanionCrisisGuide } from '../components/safety/CompanionCrisisGuide';
+import { CrisisNotice } from '../components/safety/CrisisNotice';
 import { LeaveConversationDialog } from '../components/safety/LeaveConversationDialog';
+import { ReportDialog } from '../components/safety/ReportDialog';
+import { hasCrisisSignal } from '../lib/crisisSignals';
 
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -42,6 +46,10 @@ export default function ChatPage() {
   const [relationState, setRelationState] = useState<{ userId: string; value: ChatRelation } | null>(null);
   const [unblocking, setUnblocking] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [reportingRisk, setReportingRisk] = useState(false);
+  // Guía para quien acompaña: último mensaje de la otra persona con señales
+  // de crisis. Solo se calcula acá; no se envía ni registra nada.
+  const [dismissedRiskId, setDismissedRiskId] = useState<string | null>(null);
   const [unblockError, setUnblockError] = useState<string | null>(null);
   const otherUserId = otherUser?.id ?? null;
   const relation = relationState && relationState.userId === otherUserId ? relationState.value : null;
@@ -130,6 +138,15 @@ export default function ChatPage() {
   }
 
   const name = otherUser ? otherUser.displayName || otherUser.username : '';
+
+  const riskMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message.sender.id !== user?.id && hasCrisisSignal(message.content)) return message.id;
+    }
+    return null;
+  }, [messages, user?.id]);
+  const showCompanionGuide = riskMessageId !== null && riskMessageId !== dismissedRiskId && Boolean(otherUser);
 
   return (
     <MessagesChrome>
@@ -244,6 +261,22 @@ export default function ChatPage() {
             )}
           </div>
 
+          {showCompanionGuide ? (
+            <CompanionCrisisGuide
+              name={name}
+              onReport={() => setReportingRisk(true)}
+              onDismiss={() => setDismissedRiskId(riskMessageId)}
+            />
+          ) : null}
+          {reportingRisk && otherUser ? (
+            <ReportDialog
+              targetType="USER"
+              targetId={otherUser.id}
+              name={name}
+              initialReason="SELF_HARM_RISK"
+              onClose={() => setReportingRisk(false)}
+            />
+          ) : null}
           {relation?.blocked ? (
             <div className="border-t border-border/60 bg-background p-4 text-center">
               <p className="text-sm text-muted-foreground">
@@ -265,6 +298,7 @@ export default function ChatPage() {
                   {sendError}
                 </p>
               ) : null}
+              <CrisisNotice text={content} className="mb-2" />
               {draftRestored ? (
                 <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discardDraft} className="mb-2 px-1" />
               ) : null}

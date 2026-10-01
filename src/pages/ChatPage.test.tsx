@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   getPublicProfile: vi.fn(),
   unblockUser: vi.fn(),
+  createReport: vi.fn(),
 }));
 
 vi.mock('../context/AuthContext', () => ({
@@ -32,6 +33,7 @@ vi.mock('../api/chat', () => ({
 
 vi.mock('../api/users', () => ({ getPublicProfile: api.getPublicProfile }));
 vi.mock('../api/blocks', () => ({ blockUser: vi.fn(), unblockUser: api.unblockUser }));
+vi.mock('../api/reports', () => ({ createReport: api.createReport }));
 
 import ChatPage from './ChatPage';
 
@@ -190,5 +192,71 @@ describe('leaving a conversation', () => {
     renderChat();
     expect(await screen.findByText(/personas de la comunidad, no profesionales/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'buscá ayuda ahora' })).toHaveAttribute('href', '/help');
+  });
+});
+
+describe('crisis support in chat', () => {
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
+  const conversation = { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 };
+  const msg = (id: string, sender: typeof lu | { id: string }, content: string) => ({
+    id,
+    conversationId: 'chat-1',
+    sender,
+    content,
+    read: true,
+    createdAt: '2026-10-01T12:00:00Z',
+  });
+
+  function renderChat() {
+    return render(
+      <MemoryRouter initialEntries={['/messages/chat-1']}>
+        <Routes>
+          <Route path="/messages/:conversationId" element={<ChatPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    api.getConversations.mockReset().mockResolvedValue([conversation]);
+    api.getPublicProfile.mockReset().mockResolvedValue({ blockedByCurrentUser: false, mutedByCurrentUser: false });
+    api.createReport.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('guides the companion when the other person writes something with crisis signals', async () => {
+    api.getMessages.mockReset().mockResolvedValue({
+      content: [msg('m1', lu, 'hola'), msg('m2', lu, 'la verdad no le encuentro sentido a vivir')],
+    });
+    const user = userEvent.setup();
+    renderChat();
+
+    const guide = await screen.findByRole('region', { name: 'Cómo acompañar a Lucía ahora' });
+    expect(guide).toHaveTextContent('Preguntale directamente cómo está');
+    expect(guide).toHaveTextContent('135');
+    expect(api.createReport).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Avisar al equipo' }));
+    expect(screen.getByRole('radio', { name: /riesgo de hacerse daño/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Enviar reporte' }));
+    expect(api.createReport).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: 'USER', targetId: 'u2', reason: 'SELF_HARM_RISK' }),
+    );
+  });
+
+  it('does not show for my own messages or for everyday talk', async () => {
+    api.getMessages.mockReset().mockResolvedValue({
+      content: [msg('m1', { id: 'me' }, 'me quiero morir'), msg('m2', lu, 'me muero de risa jaja')],
+    });
+    renderChat();
+    expect(await screen.findByText('me muero de risa jaja')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /Cómo acompañar/ })).not.toBeInTheDocument();
+  });
+
+  it('hides the guide after "Entendido"', async () => {
+    api.getMessages.mockReset().mockResolvedValue({ content: [msg('m2', lu, 'quiero hacerme daño')] });
+    const user = userEvent.setup();
+    renderChat();
+    await user.click(await screen.findByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('region', { name: /Cómo acompañar/ })).not.toBeInTheDocument();
   });
 });

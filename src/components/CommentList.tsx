@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDraft } from '../hooks/useDraft';
 import { draftKey } from '../lib/drafts';
-import axios from 'axios';
+import { friendlyError } from '../lib/friendlyError';
 import { getComments, createComment } from '../api/comments';
-import type { Comment, ApiErrorResponse } from '../api/types';
+import type { Comment } from '../api/types';
 import { timeAgo } from '../lib/timeAgo';
 import Avatar from './Avatar';
 import { DraftNotice } from './byourside/draft-notice';
+import { CrisisNotice } from './safety/CrisisNotice';
 import { Button } from './byourside/ui';
 
 export default function CommentList({ postId }: { postId: string }) {
@@ -20,7 +21,7 @@ export default function CommentList({ postId }: { postId: string }) {
   useEffect(() => {
     getComments(postId)
       .then(setComments)
-      .catch(() => setError('No se pudieron cargar las respuestas'))
+      .catch(() => setError('No pudimos traer las respuestas. Probá de nuevo en un rato.'))
       .finally(() => setLoading(false));
   }, [postId]);
 
@@ -32,11 +33,7 @@ export default function CommentList({ postId }: { postId: string }) {
       setContent('');
       setComments((prev) => [...prev, comment]);
     } catch (err) {
-      if (axios.isAxiosError<ApiErrorResponse>(err)) {
-        setError(err.response?.data.message ?? 'Error al responder');
-      } else {
-        setError('Error al responder');
-      }
+      setError(friendlyError(err, 'No pudimos enviar tu respuesta. Tu texto sigue acá, podés intentar de nuevo.'));
     }
   }
 
@@ -71,6 +68,7 @@ export default function CommentList({ postId }: { postId: string }) {
           Responder
         </Button>
       </form>
+      <CrisisNotice text={content} />
       {restored ? <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discard} /> : null}
       {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
     </div>

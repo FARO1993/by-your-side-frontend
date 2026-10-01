@@ -4,6 +4,7 @@ import type { StatusMood } from '../../api/types';
 import { cn } from '../../lib/cn';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../../lib/visual';
 import Avatar from '../Avatar';
+import { CrisisNotice } from '../safety/CrisisNotice';
 import { DraftNotice } from './draft-notice';
 import { Button } from './ui';
 
@@ -77,6 +78,7 @@ export function Composer({
             placeholder="¿Cómo venís hoy? Acá te leemos sin apuro…"
             className="w-full resize-none bg-transparent text-[0.975rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
+          <CrisisNotice text={content} className="mb-3" />
           {submitError ? (
             <p role="alert" className="mb-2 text-xs font-medium text-destructive">
               {submitError}
