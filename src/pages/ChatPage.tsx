@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Send } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, DoorOpen, Send } from 'lucide-react';
 import { unblockUser } from '../api/blocks';
 import { getConversations, getMessages, sendMessage } from '../api/chat';
 import { getPublicProfile } from '../api/users';
@@ -17,6 +17,7 @@ import { DraftNotice } from '../components/byourside/draft-notice';
 import { ConversationList, MessagesChrome } from '../components/byourside/messages-chrome';
 import { Button, Spinner } from '../components/byourside/ui';
 import { ChatSafetyMenu, type ChatRelation } from '../components/safety/ChatSafetyMenu';
+import { LeaveConversationDialog } from '../components/safety/LeaveConversationDialog';
 
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -40,6 +41,7 @@ export default function ChatPage() {
   // para que al cambiar de conversación no se arrastre la anterior.
   const [relationState, setRelationState] = useState<{ userId: string; value: ChatRelation } | null>(null);
   const [unblocking, setUnblocking] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [unblockError, setUnblockError] = useState<string | null>(null);
   const otherUserId = otherUser?.id ?? null;
   const relation = relationState && relationState.userId === otherUserId ? relationState.value : null;
@@ -157,16 +159,44 @@ export default function ChatPage() {
               {relation?.blocked ? (
                 <p className="text-xs text-muted-foreground">Bloqueaste a esta persona</p>
               ) : (
-                <p className="inline-flex items-center gap-1.5 text-xs text-listening-strong">
+                <p className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-listening-strong">
                   <span className="size-1.5 rounded-full bg-listening" />
                   Está para escucharte
                 </p>
               )}
             </div>
             {otherUser ? (
-              <ChatSafetyMenu userId={otherUser.id} name={name} relation={relation} onRelationChange={updateRelation} />
+              <div className="ml-auto flex shrink-0 items-center gap-1">
+                {relation?.blocked ? null : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Necesito irme"
+                    className="px-2.5 sm:px-3.5"
+                    onClick={() => setLeaving(true)}
+                  >
+                    <DoorOpen className="size-4" aria-hidden="true" />
+                    {/* En mobile el texto corto evita partir el nombre/estado en dos líneas. */}
+                    <span className="sm:hidden">Irme</span>
+                    <span className="hidden sm:inline">Necesito irme</span>
+                  </Button>
+                )}
+                <ChatSafetyMenu userId={otherUser.id} name={name} relation={relation} onRelationChange={updateRelation} />
+              </div>
             ) : null}
           </header>
+          {leaving && conversationId ? (
+            <LeaveConversationDialog
+              name={name}
+              onClose={() => setLeaving(false)}
+              onLeave={() => navigate('/messages')}
+              onSendAndLeave={async (goodbye) => {
+                await sendMessage(conversationId, goodbye);
+                navigate('/messages');
+              }}
+            />
+          ) : null}
 
           <div
             ref={scroller}
@@ -180,6 +210,13 @@ export default function ChatPage() {
               <>
                 <p className="mx-auto mb-4 w-fit rounded-full bg-card/70 px-3 py-1 text-xs text-muted-foreground">
                   Conversación privada entre ustedes.
+                </p>
+                <p className="mx-auto mb-5 max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
+                  Quienes acompañan acá son personas de la comunidad, no profesionales. Si es urgente,{' '}
+                  <Link to="/help" className="font-medium text-listening-strong underline-offset-2 hover:underline">
+                    buscá ayuda ahora
+                  </Link>
+                  .
                 </p>
                 <div className="space-y-3">
                   {messages.map((message) => {

@@ -116,3 +116,79 @@ describe('chat safety', () => {
     expect(screen.getByPlaceholderText('Escribí un mensaje…')).toBeInTheDocument();
   });
 });
+
+describe('leaving a conversation', () => {
+  const conversation = {
+    id: 'chat-1',
+    otherUser: { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null },
+    lastMessageContent: null,
+    lastMessageAt: null,
+    unreadCount: 0,
+  };
+
+  function renderChat() {
+    return render(
+      <MemoryRouter initialEntries={['/messages/chat-1']}>
+        <Routes>
+          <Route path="/messages/:conversationId" element={<ChatPage />} />
+          <Route path="/messages" element={<p>Lista de conversaciones</p>} />
+          <Route path="/help" element={<p>Página de ayuda</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    api.getConversations.mockReset().mockResolvedValue([conversation]);
+    api.getMessages.mockReset().mockResolvedValue({ content: [] });
+    api.getPublicProfile.mockReset().mockResolvedValue({ blockedByCurrentUser: false, mutedByCurrentUser: false });
+    api.sendMessage.mockReset();
+  });
+
+  it('sends the chosen goodbye and goes back to the list', async () => {
+    api.sendMessage.mockResolvedValue({ id: 'm9' });
+    const user = userEvent.setup();
+    renderChat();
+
+    await user.click(await screen.findByRole('button', { name: 'Necesito irme' }));
+    const dialog = screen.getByRole('dialog', { name: 'Está bien irse' });
+    await user.click(screen.getByRole('radio', { name: 'Me tengo que ir por ahora. Gracias por la charla.' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar y salir' }));
+
+    expect(api.sendMessage).toHaveBeenCalledWith('chat-1', 'Me tengo que ir por ahora. Gracias por la charla.');
+    expect(await screen.findByText('Lista de conversaciones')).toBeInTheDocument();
+    expect(dialog).not.toBeInTheDocument();
+  });
+
+  it('can leave without sending anything', async () => {
+    const user = userEvent.setup();
+    renderChat();
+    await user.click(await screen.findByRole('button', { name: 'Necesito irme' }));
+    await user.click(screen.getByRole('button', { name: 'Salir sin enviar' }));
+    expect(api.sendMessage).not.toHaveBeenCalled();
+    expect(await screen.findByText('Lista de conversaciones')).toBeInTheDocument();
+  });
+
+  it('stays and explains if the goodbye cannot be sent', async () => {
+    api.sendMessage.mockRejectedValue(new Error('offline'));
+    const user = userEvent.setup();
+    renderChat();
+    await user.click(await screen.findByRole('button', { name: 'Necesito irme' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar y salir' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Podés salir igual');
+    expect(screen.getByRole('dialog', { name: 'Está bien irse' })).toBeInTheDocument();
+  });
+
+  it('hides the option when I blocked the person (they cannot receive messages)', async () => {
+    api.getPublicProfile.mockResolvedValue({ blockedByCurrentUser: true, mutedByCurrentUser: false });
+    renderChat();
+    expect(await screen.findByText(/Bloqueaste a Lucía/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Necesito irme' })).not.toBeInTheDocument();
+  });
+
+  it('reminds that companions are not professionals, with a way to urgent help', async () => {
+    renderChat();
+    expect(await screen.findByText(/personas de la comunidad, no profesionales/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'buscá ayuda ahora' })).toHaveAttribute('href', '/help');
+  });
+});
