@@ -228,13 +228,16 @@ export default function CompanionModePage() {
               </div>
             </div>
           ) : (
-            <ChoiceRow
-              label="¿Cómo podés estar ahora?"
-              options={OFFERING_TYPES.map((type) => ({ id: type, label: OFFERING_SELF_LABEL[type] }))}
-              pending={offeringPending}
-              tone="listening"
-              onChoose={(type) => void chooseOffering(type)}
-            />
+            <>
+              <BoundaryNote />
+              <ChoiceRow
+                label="¿Cómo podés estar ahora?"
+                options={OFFERING_TYPES.map((type) => ({ id: type, label: OFFERING_SELF_LABEL[type] }))}
+                pending={offeringPending}
+                tone="listening"
+                onChoose={(type) => void chooseOffering(type)}
+              />
+            </>
           )}
           {offeringError ? (
             <p role="alert" className="mt-3 text-sm text-destructive">
@@ -247,6 +250,9 @@ export default function CompanionModePage() {
       {need ? (
         <section aria-labelledby="companion-candidates-title">
           <SectionTitle id="companion-candidates-title">Quienes pueden acompañarte</SectionTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Son personas de la comunidad, no profesionales. Si en algún momento no te hace bien la charla, podés irte cuando quieras.
+          </p>
           {candidates === null && !candidatesError ? (
             <div className="mt-3 h-24 motion-safe:animate-pulse rounded-2xl bg-muted/40" />
           ) : null}
@@ -344,6 +350,19 @@ function ChoiceRow<T extends string>({
           </Button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function BoundaryNote() {
+  return (
+    <div className="mb-4 rounded-2xl bg-listening-soft/70 p-4 text-sm leading-relaxed text-foreground">
+      <p className="font-medium">Antes de ofrecerte</p>
+      <ul className="mt-2 space-y-1.5 text-foreground/85">
+        <li>No hace falta saber qué decir ni resolverle nada a nadie: alcanza con estar.</li>
+        <li>Acompañar no es hacer terapia. Si alguien está en peligro, acercale las líneas de ayuda.</li>
+        <li>Podés cortar la charla cuando lo necesites. Cuidarte también cuenta.</li>
+      </ul>
     </div>
   );
 }
