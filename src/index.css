@@ -48,6 +48,8 @@
   /* Color base de las sombras (se mezcla con transparencia en shadow-*) */
   --shadow-color: oklch(0.29 0.02 275);
   --shadow-strength: 1;
+  /* Fondo detrás de modales: siempre oscurece, en ambos temas */
+  --overlay: oklch(0.29 0.02 275 / 0.28);
 
   --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-fraunces: "Fraunces", ui-serif, Georgia, serif;
@@ -101,6 +103,7 @@
 
   --shadow-color: oklch(0.08 0.01 275);
   --shadow-strength: 3.5;
+  --overlay: oklch(0.08 0.01 275 / 0.6);
 }
 
 @theme inline {
@@ -137,6 +140,7 @@
   --color-mist: var(--mist);
   --color-horizon: var(--horizon);
   --color-calm: var(--calm);
+  --color-overlay: var(--overlay);
   --font-sans: var(--font-inter);
   --font-serif: var(--font-fraunces);
   --radius-sm: calc(var(--radius) - 4px);

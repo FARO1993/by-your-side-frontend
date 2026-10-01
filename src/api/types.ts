@@ -228,3 +228,13 @@ export interface PublicAvailability {
 export interface CompanionPreferencesResponse {
   types: CompanionPreferenceType[];
 }
+// Espejo de report/ReportReason y ReportTargetType del backend (POST /api/reports)
+export type ReportReason = 'SELF_HARM_RISK' | 'HARASSMENT' | 'SPAM' | 'HATE_SPEECH' | 'OTHER';
+export type ReportTargetType = 'POST' | 'COMMENT' | 'USER';
+
+export interface CreateReportRequest {
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
+}
