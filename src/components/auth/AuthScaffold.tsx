@@ -10,7 +10,7 @@ function WelcomePanel() {
         <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-card/70 text-presence-strong">
           <PresenceGlyph className="h-4 w-6" />
         </div>
-        <h2 className="font-serif text-3xl text-pretty">No tenés que atravesarlo solo.</h2>
+        <h2 className="font-serif text-3xl text-pretty">No tenés que atravesarlo en soledad.</h2>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-foreground/80">
           ByYourSide es un lugar tranquilo para compartir cómo estás y encontrar a alguien que te
           acompañe. Sin apuros, sin juicios. Solo presencia.
