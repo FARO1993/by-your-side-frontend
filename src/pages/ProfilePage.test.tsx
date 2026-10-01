@@ -345,7 +345,10 @@ describe('ProfilePage', () => {
     expect(screen.queryByRole('heading', { name: 'Cómo suele estar para otros' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Cambiar contraseña' })).not.toBeInTheDocument();
     expect(screen.getByText('Todavía no hay publicaciones para ver acá')).toBeInTheDocument();
-    expect(screen.getByText(/te acompañan/).closest('p')).toHaveTextContent('2 te acompañan · 3 acompañás');
+    // En perfiles ajenos no se muestran números de relaciones (evita comparaciones).
+    expect(screen.queryByText(/te acompañan/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/acompañás/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tu red se arma/)).not.toBeInTheDocument();
   });
 
   it('labels an existing follow as Acompañando and can unfollow', async () => {

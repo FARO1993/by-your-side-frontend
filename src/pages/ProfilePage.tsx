@@ -458,7 +458,7 @@ export default function ProfilePage() {
             </form>
           ) : null}
 
-          <ProfileMetrics followers={profile.followersCount} following={profile.followingCount} isOwn={isOwn} />
+          {isOwn ? <ProfileMetrics followers={profile.followersCount} following={profile.followingCount} /> : null}
         </div>
       </Card>
 
@@ -603,20 +603,20 @@ export default function ProfilePage() {
 }
 
 /**
- * Relaciones del perfil sin presión: los ceros no se muestran (un
- * "0 te acompañan" pesa más de lo que informa). En el perfil propio, sin
- * nadie todavía, se muestra un texto amable en su lugar.
+ * Relaciones del perfil, SOLO en el perfil propio.
+ * En perfiles ajenos no se muestran números: invitan a compararse ("los
+ * demás tienen más gente que yo") y no ayudan a acompañar. Si vos acompañás
+ * a esa persona ya se ve en el botón Acompañar/Acompañando.
+ * Los ceros no se muestran: sin nadie todavía, va un texto amable.
  */
-function ProfileMetrics({ followers, following, isOwn }: { followers: number; following: number; isOwn: boolean }) {
+function ProfileMetrics({ followers, following }: { followers: number; following: number }) {
   const parts = [
     followers > 0 ? { value: followers, label: 'te acompañan' } : null,
     following > 0 ? { value: following, label: 'acompañás' } : null,
   ].filter((part): part is { value: number; label: string } => part !== null);
 
   if (parts.length === 0) {
-    return isOwn ? (
-      <p className="mt-4 text-sm text-muted-foreground">Tu red se arma de a poco, a tu ritmo.</p>
-    ) : null;
+    return <p className="mt-4 text-sm text-muted-foreground">Tu red se arma de a poco, a tu ritmo.</p>;
   }
 
   return (
