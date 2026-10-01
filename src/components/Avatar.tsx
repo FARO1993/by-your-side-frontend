@@ -35,7 +35,7 @@ export default function Avatar({
     <div
       aria-hidden="true"
       className={cn(
-        'overflow-hidden rounded-full font-medium ring-1 ring-black/[0.04]',
+        'overflow-hidden rounded-full font-medium ring-1 ring-foreground/[0.06]',
         sizeClass,
         !avatarUrl ? tintFor(name) : 'bg-muted',
         className,

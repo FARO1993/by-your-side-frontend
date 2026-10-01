@@ -1,12 +1,17 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { ThemeProvider } from '../../context/ThemeContext';
+import { THEME_STORAGE_KEY } from '../../lib/theme';
 import { AppShell } from './app-shell';
 
 function renderShell(notifications?: number) {
   return render(
-    <AppShell active="feed" onNavigate={() => {}} unread={{ notifications }}>
-      <p>Contenido</p>
-    </AppShell>,
+    <ThemeProvider>
+      <AppShell active="feed" onNavigate={() => {}} unread={{ notifications }}>
+        <p>Contenido</p>
+      </AppShell>
+    </ThemeProvider>,
   );
 }
 
@@ -27,5 +32,34 @@ describe('notification badge', () => {
     renderShell(12);
     expect(screen.getAllByRole('button', { name: 'Novedades, 12 sin leer' })).toHaveLength(2);
     expect(screen.getAllByText('9+')).toHaveLength(2);
+  });
+});
+
+describe('theme toggle', () => {
+  it('switches to night mode, applies it to <html> and remembers the choice', async () => {
+    const user = userEvent.setup();
+    renderShell();
+
+    const [desktopToggle, mobileToggle] = screen.getAllByRole('button', { name: 'Modo nocturno' });
+    expect(desktopToggle).toHaveAttribute('aria-pressed', 'false');
+    expect(document.documentElement.dataset.theme).toBe('light');
+
+    await user.click(desktopToggle);
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(mobileToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+
+    await user.click(mobileToggle);
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+  });
+
+  it('starts in night mode when the user chose it before', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    renderShell();
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(screen.getAllByRole('button', { name: 'Modo nocturno' })[0]).toHaveAttribute('aria-pressed', 'true');
   });
 });
