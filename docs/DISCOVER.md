@@ -16,3 +16,9 @@ La búsqueda de personas usa `GET /api/users/discover`. El backend decide el mat
 Cada persona trae `available: boolean` en el mismo response. Si es `true`, la card dice “Disponible ahora”. Discover no llama a `GET /api/users/{id}/availability` y no muestra el tipo de compañía.
 
 Un perfil `PRIVATE` puede estar disponible y seguir sin bio.
+
+## Ánimo
+
+Cada persona también trae `statusMood` en ese mismo response: el ánimo del status activo, o `null`. Si es `null`, la card no muestra ánimo ni un texto de ausencia. Si tiene valor, se muestra con el mismo copy y badge que el perfil (`STATUS_MOOD_UI`). Discover no llama a `GET /api/users/{id}/status`.
+
+`statusMood` y `available` son independientes: pueden aparecer juntos, uno solo, o ninguno.
