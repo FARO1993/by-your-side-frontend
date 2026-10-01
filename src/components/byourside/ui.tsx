@@ -1,4 +1,4 @@
-import { useId, type ComponentPropsWithoutRef, type ElementType, type ReactNode } from 'react';
+import { useId, type ComponentProps, type ComponentPropsWithoutRef, type ElementType, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
@@ -80,7 +80,7 @@ export function IconButton({
   children,
   type = 'button',
   ...props
-}: ComponentPropsWithoutRef<'button'> & { label: string }) {
+}: ComponentProps<'button'> & { label: string }) {
   return (
     <button
       type={type}

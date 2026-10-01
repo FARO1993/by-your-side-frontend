@@ -388,6 +388,7 @@ export default function ProfilePage() {
             )}
             {!isOwn ? (
               <ProfileSafetyActions
+                userId={profile.id}
                 name={displayName}
                 blocked={profile.blockedByCurrentUser}
                 muted={profile.mutedByCurrentUser}
