@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } fro
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { CalendarDays, MessageCircle } from 'lucide-react';
+import { blockUser, unblockUser } from '../api/blocks';
 import { getOrCreateConversation } from '../api/chat';
+import { muteUser, unmuteUser } from '../api/mutes';
 import { getUserStatus, type UserStatusView } from '../api/statuses';
-import type { CompanionPreferenceType, Post, PublicUserProfile, Status } from '../api/types';
+import type { CompanionPreferenceType, Post, ProfileVisibility, PublicUserProfile, Status } from '../api/types';
 import {
   getCompanionPreferences,
   getPublicAvailability,
@@ -18,6 +20,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
+import OwnRelations from '../components/OwnRelations';
+import ProfileSafetyActions from '../components/ProfileSafetyActions';
 import PostCard from '../components/PostCard';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
@@ -48,6 +52,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [bioDraft, setBioDraft] = useState('');
+  const [visibilityDraft, setVisibilityDraft] = useState<ProfileVisibility>('PUBLIC');
   const [nameError, setNameError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -172,6 +177,25 @@ export default function ProfilePage() {
     navigate(`/messages/${conversation.id}`);
   }
 
+  async function reloadProfile(options: { posts: boolean }) {
+    if (!userId) return;
+    const [profileData, postsPage, statusView] = await Promise.all([
+      getPublicProfile(userId),
+      options.posts ? getUserPosts(userId).catch(() => ({ content: [] as Post[] })) : Promise.resolve(null),
+      getUserStatus(userId).catch((): UserStatusView => ({ kind: 'hidden' })),
+    ]);
+    setSnapshot((prev) =>
+      prev && prev.userId === userId
+        ? {
+            ...prev,
+            profile: profileData,
+            posts: postsPage ? postsPage.content : prev.posts,
+            latestStatus: statusView.kind === 'active' ? statusView.status : null,
+          }
+        : prev,
+    );
+  }
+
   function togglePreference(type: CompanionPreferenceType) {
     if (!ownPreferences || !profile) return;
     setPreferenceSaved(false);
@@ -210,13 +234,18 @@ export default function ProfilePage() {
     if (!profile) return;
     setNameDraft(profile.displayName ?? '');
     setBioDraft(profile.bio ?? '');
+    setVisibilityDraft(profile.profileVisibility);
     setNameError(null);
     setProfileError(null);
     setEditing(true);
   }
 
   async function saveProfile() {
-    const payload = profileUpdatePayload({ displayName: nameDraft, bio: bioDraft });
+    const payload = profileUpdatePayload({
+      displayName: nameDraft,
+      bio: bioDraft,
+      profileVisibility: visibilityDraft,
+    });
     if (!payload.ok) {
       setNameError(payload.message);
       setProfileError(null);
@@ -229,7 +258,15 @@ export default function ProfilePage() {
       const saved = await updateProfile(payload.body);
       setSnapshot((prev) =>
         prev && prev.profile.id === profileId
-          ? { ...prev, profile: { ...prev.profile, displayName: saved.displayName, bio: saved.bio } }
+          ? {
+              ...prev,
+              profile: {
+                ...prev.profile,
+                displayName: saved.displayName,
+                bio: saved.bio,
+                profileVisibility: saved.profileVisibility ?? payload.body.profileVisibility,
+              },
+            }
           : prev,
       );
       setEditing(false);
@@ -320,28 +357,58 @@ export default function ProfilePage() {
             </section>
           ) : null}
 
-          <div className="mt-4 flex gap-2">
+          {isOwn ? (
+            <p className="mt-4 text-sm text-muted-foreground">{profile.profileVisibility === 'PRIVATE' ? 'Perfil privado' : 'Perfil público'}</p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-2">
             {isOwn ? (
               <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={startEdit}>
                 Editar perfil
               </Button>
-            ) : (
+            ) : profile.blockedByCurrentUser ? null : (
               <>
                 <FollowButton
+                  key={`${profile.id}-${profile.followState}`}
                   userId={profile.id}
-                  initiallyFollowing={profile.followedByCurrentUser}
+                  initiallyFollowing={profile.followState === 'FOLLOWING'}
+                  requested={profile.followState === 'REQUESTED'}
+                  followState={profile.followState}
                   followingLabel="Acompañando"
                   followVariant="presence"
                   size="md"
                   fullWidth
                   className="min-w-0 flex-1"
                 />
-                <Button type="button" size="sm" variant="outline" className="shrink-0 self-center" onClick={handleMessage}>
+                <Button type="button" size="sm" variant="outline" className="shrink-0 self-center" onClick={() => void handleMessage()}>
                   <MessageCircle className="size-4" />
                   Mensajes
                 </Button>
               </>
             )}
+            {!isOwn ? (
+              <ProfileSafetyActions
+                name={displayName}
+                blocked={profile.blockedByCurrentUser}
+                muted={profile.mutedByCurrentUser}
+                onBlock={async () => {
+                  await blockUser(profile.id);
+                  await reloadProfile({ posts: true });
+                }}
+                onUnblock={async () => {
+                  await unblockUser(profile.id);
+                  await reloadProfile({ posts: true });
+                }}
+                onMute={async () => {
+                  await muteUser(profile.id);
+                  await reloadProfile({ posts: false });
+                }}
+                onUnmute={async () => {
+                  await unmuteUser(profile.id);
+                  await reloadProfile({ posts: false });
+                }}
+              />
+            ) : null}
           </div>
 
           {editing ? (
@@ -354,6 +421,26 @@ export default function ProfilePage() {
             >
               <TextField label="Nombre" value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} error={nameError ?? undefined} />
               <TextArea label="Bio" rows={3} value={bioDraft} onChange={(event) => setBioDraft(event.target.value)} />
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Quién puede ver tu perfil</legend>
+                {(
+                  [
+                    ['PUBLIC', 'Público'],
+                    ['PRIVATE', 'Privado'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <label key={value} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="profile-visibility"
+                      value={value}
+                      checked={visibilityDraft === value}
+                      onChange={() => setVisibilityDraft(value)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
               {profileError ? (
                 <p role="alert" className="text-sm text-destructive">
                   {profileError}
@@ -374,6 +461,8 @@ export default function ProfilePage() {
       </Card>
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+
+      {isOwn ? <OwnRelations userId={profile.id} onChanged={() => void reloadProfile({ posts: false })} /> : null}
 
       {isOwn && currentUser && !currentUser.emailVerified ? (
         <Card className="space-y-3 p-4">

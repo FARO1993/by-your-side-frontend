@@ -14,9 +14,9 @@ import { Button, Card } from '../components/byourside/ui';
 const moods = Object.entries(STATUS_MOOD_UI) as [StatusMood, { label: string; tone: keyof typeof MOOD_TONE_STYLES }][];
 
 const audiences: { value: CreatePostRequest['visibility']; label: string; icon: typeof Globe }[] = [
-  { value: 'PUBLIC', label: 'Toda la comunidad', icon: Globe },
-  { value: 'FOLLOWERS_ONLY', label: 'Quienes me acompañan', icon: Users },
-  { value: 'PRIVATE', label: 'Solo para mí', icon: Lock },
+  { value: 'PUBLIC', label: 'Público', icon: Globe },
+  { value: 'FOLLOWERS_ONLY', label: 'Solo seguidores', icon: Users },
+  { value: 'PRIVATE', label: 'Solo yo', icon: Lock },
 ];
 
 export default function CreatePostPage() {
@@ -113,6 +113,7 @@ export default function CreatePostPage() {
                 <button
                   key={value}
                   type="button"
+                  aria-pressed={visibility === value}
                   onClick={() => setVisibility(value)}
                   className={cn(
                     'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm',

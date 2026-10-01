@@ -9,6 +9,7 @@ import type {
   PublicAvailability,
   PublicUserProfile,
   User,
+  ProfileVisibility,
 } from './types';
 
 export type PublicAvailabilityView =
@@ -76,7 +77,11 @@ export async function discoverUsers({
   return response.data;
 }
 
-export async function updateProfile(payload: { displayName: string; bio: string }): Promise<User> {
+export async function updateProfile(payload: {
+  displayName: string;
+  bio: string;
+  profileVisibility: ProfileVisibility;
+}): Promise<User> {
   const response = await apiClient.patch<User>('/api/users/me', payload);
   return response.data;
 }

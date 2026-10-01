@@ -18,7 +18,7 @@ describe('profile update', () => {
   it('patches the current user and returns the saved profile', async () => {
     const saved = { id: 'me', displayName: 'Ana', bio: null };
     client.patch.mockResolvedValue({ data: saved });
-    await expect(updateProfile({ displayName: 'Ana', bio: '' })).resolves.toEqual(saved);
-    expect(client.patch).toHaveBeenCalledWith('/api/users/me', { displayName: 'Ana', bio: '' });
+    await expect(updateProfile({ displayName: 'Ana', bio: '', profileVisibility: 'PRIVATE' })).resolves.toEqual(saved);
+    expect(client.patch).toHaveBeenCalledWith('/api/users/me', { displayName: 'Ana', bio: '', profileVisibility: 'PRIVATE' });
   });
 });
