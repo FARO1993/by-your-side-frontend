@@ -4,6 +4,12 @@ import { uniqueUsername } from './helpers';
 async function dismissWelcome(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByRole('button', { name: 'Empecemos 💜' }).click();
+  // Onboarding con normas de la comunidad (una vez por persona).
+  await expect(page.getByRole('heading', { name: 'Qué es ByYourSide' })).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByRole('heading', { name: 'Cómo nos cuidamos acá' })).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Me sumo con cuidado' }).click();
 }
 
 test.describe('Registro y login', () => {

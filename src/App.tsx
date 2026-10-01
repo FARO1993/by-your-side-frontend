@@ -15,6 +15,7 @@ import FeedPage from './pages/FeedPage';
 import ProfilePage from './pages/ProfilePage';
 import DiscoverPage from './pages/DiscoverPage';
 import HelpResourcesPage from './pages/HelpResourcesPage';
+import GuidelinesPage from './pages/GuidelinesPage';
 import ConversationsPage from './pages/ConversationsPage';
 import ChatPage from './pages/ChatPage';
 import PostPage from './pages/PostPage';
@@ -53,6 +54,15 @@ export default function App() {
             element={
               <HelpLayout>
                 <HelpResourcesPage />
+              </HelpLayout>
+            }
+          />
+
+          <Route
+            path="/normas"
+            element={
+              <HelpLayout>
+                <GuidelinesPage />
               </HelpLayout>
             }
           />
