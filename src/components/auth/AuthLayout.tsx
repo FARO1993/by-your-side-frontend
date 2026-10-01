@@ -5,7 +5,7 @@ import './auth-screen.css';
 
 const COPY = {
   login: {
-    title: 'No tenés que atravesarlo solo.',
+    title: 'No tenés que atravesarlo en soledad.',
     body: 'Un espacio tranquilo para volver, compartir cómo estás y encontrar a alguien que te acompañe.',
   },
   register: {
