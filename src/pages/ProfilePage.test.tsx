@@ -657,18 +657,20 @@ describe('ProfilePage', () => {
     expect(await screen.findByRole('button', { name: 'Acompañando' })).toBeInTheDocument();
   });
 
-  it('accepts an incoming request without creating a follow locally', async () => {
+  it('accepts an incoming request and shows that person as accompanying', async () => {
     const request = incoming();
-    api.listIncomingFollowRequests.mockResolvedValue([request]);
+    api.listIncomingFollowRequests.mockResolvedValueOnce([request]).mockResolvedValue([]);
+    api.getFollowers.mockResolvedValueOnce([]).mockResolvedValue([{ id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null }]);
     api.acceptFollowRequest.mockResolvedValue({ ...request, status: 'ACCEPTED' });
     renderProfile();
     await userEvent.click(await screen.findByRole('button', { name: 'Aceptar' }));
-    await waitFor(() => expect(api.acceptFollowRequest).toHaveBeenCalledWith('req-1'));
-    expect(api.followUser).not.toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: 'Quienes te acompañan' })).toBeInTheDocument();
+    expect(screen.getByText('Luz')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aceptar' })).not.toBeInTheDocument();
+    expect(api.followUser).not.toHaveBeenCalled();
   });
 
-  it('rejects an incoming request', async () => {
+  it('rejects an incoming request without adding that person as accompanying', async () => {
     const request = incoming();
     api.listIncomingFollowRequests.mockResolvedValue([request]);
     api.rejectFollowRequest.mockResolvedValue({ ...request, status: 'REJECTED' });
@@ -676,6 +678,21 @@ describe('ProfilePage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
     await waitFor(() => expect(api.rejectFollowRequest).toHaveBeenCalledWith('req-1'));
     expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Quienes te acompañan' })).not.toBeInTheDocument();
+    expect(api.getFollowers).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the request and explains a failure that is not a stale conflict', async () => {
+    api.listIncomingFollowRequests.mockResolvedValue([incoming()]);
+    const failure = new AxiosError('down');
+    failure.response = { status: 500, data: {}, statusText: 'Error', headers: {}, config: {} as never };
+    api.acceptFollowRequest.mockRejectedValue(failure);
+    renderProfile();
+    await userEvent.click(await screen.findByRole('button', { name: 'Aceptar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos actualizar esa relación.');
+    expect(screen.getByRole('button', { name: 'Aceptar' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Rechazar' })).toBeEnabled();
+    expect(screen.queryByRole('heading', { name: 'Quienes te acompañan' })).not.toBeInTheDocument();
   });
 
   it('hides actions when an incoming request is no longer pending', async () => {

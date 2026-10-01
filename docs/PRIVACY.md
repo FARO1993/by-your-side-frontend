@@ -26,7 +26,13 @@ La edición del perfil propio manda `profileVisibility` en `PATCH /api/users/me`
 
 Un `409` al aceptar, rechazar o cancelar muestra "Esa solicitud ya no está pendiente." y quita la acción. El perfil, si sigue abierto, vuelve a pedir el estado real.
 
-En el perfil propio, las solicitudes recibidas, las enviadas y quienes te acompañan aparecen solo cuando hay filas.
+En el perfil propio, las solicitudes recibidas, las enviadas y quienes te acompañan aparecen solo cuando hay filas. Aceptar vuelve a pedir esas listas, así que la persona aceptada entra en "Quienes te acompañan" sin recargar la página. Rechazar no vuelve a pedir seguidores.
+
+## Deuda de contrato: PostCard
+
+`PostCard` recibe `followedByCurrentUser`. Con `true` puede mostrar `FOLLOWING`. Con `false` no puede separar `NONE` de `REQUESTED`, así que no puede mostrar "Solicitud enviada" en el primer render. El frontend no infiere `REQUESTED` ni lo guarda como fuente de verdad.
+
+Para resolverlo, `PostResponse` tendría que exponer `followState`: `NONE`, `REQUESTED` o `FOLLOWING`. Un `requestId` serviría después para cancelar desde la card, y no hace falta para representar `REQUESTED`. Queda como deuda futura de contrato, fuera de Fase 9.
 
 ## Bloqueo y silencio
 

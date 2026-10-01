@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   acceptFollowRequest,
   cancelFollowRequest,
@@ -19,14 +19,26 @@ export default function OwnRelations({ userId, onChanged }: { userId: string; on
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const loadRelations = useCallback(async () => {
+    const [received, sent, people] = await Promise.all([
+      listIncomingFollowRequests(),
+      listOutgoingFollowRequests(),
+      getFollowers(userId),
+    ]);
+    return { received, sent, people };
+  }, [userId]);
+
+  const applyRelations = useCallback((lists: { received: FollowRequest[]; sent: FollowRequest[]; people: UserSummary[] }) => {
+    setIncoming(lists.received);
+    setOutgoing(lists.sent);
+    setFollowers(lists.people);
+  }, []);
+
   useEffect(() => {
     let active = true;
-    void Promise.all([listIncomingFollowRequests(), listOutgoingFollowRequests(), getFollowers(userId)])
-      .then(([received, sent, people]) => {
-        if (!active) return;
-        setIncoming(received);
-        setOutgoing(sent);
-        setFollowers(people);
+    void loadRelations()
+      .then((lists) => {
+        if (active) applyRelations(lists);
       })
       .catch(() => {
         if (!active) return;
@@ -37,7 +49,7 @@ export default function OwnRelations({ userId, onChanged }: { userId: string; on
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [loadRelations, applyRelations]);
 
   async function resolve(request: FollowRequest, action: 'accept' | 'reject') {
     setBusyId(request.requestId);
@@ -45,17 +57,29 @@ export default function OwnRelations({ userId, onChanged }: { userId: string; on
     try {
       if (action === 'accept') await acceptFollowRequest(request.requestId);
       else await rejectFollowRequest(request.requestId);
-      setIncoming((current) => current?.filter((item) => item.requestId !== request.requestId) ?? []);
-      onChanged?.();
     } catch (error) {
       if (isStaleFollowRequest(error)) {
         setNotice(FOLLOW_REQUEST_STALE);
         setIncoming((current) => current?.filter((item) => item.requestId !== request.requestId) ?? []);
         onChanged?.();
+      } else {
+        setNotice('No pudimos actualizar esa relación.');
       }
+      return;
     } finally {
       setBusyId(null);
     }
+    if (action === 'accept') {
+      try {
+        applyRelations(await loadRelations());
+      } catch {
+        setIncoming((current) => current?.filter((item) => item.requestId !== request.requestId) ?? []);
+        setNotice('No pudimos actualizar esa relación.');
+      }
+    } else {
+      setIncoming((current) => current?.filter((item) => item.requestId !== request.requestId) ?? []);
+    }
+    onChanged?.();
   }
 
   async function dropFollower(person: UserSummary) {
