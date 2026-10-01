@@ -8,6 +8,7 @@ import type { Comment, ApiErrorResponse } from '../api/types';
 import { timeAgo } from '../lib/timeAgo';
 import Avatar from './Avatar';
 import { DraftNotice } from './byourside/draft-notice';
+import { CrisisNotice } from './safety/CrisisNotice';
 import { Button } from './byourside/ui';
 
 export default function CommentList({ postId }: { postId: string }) {
@@ -71,6 +72,7 @@ export default function CommentList({ postId }: { postId: string }) {
           Responder
         </Button>
       </form>
+      <CrisisNotice text={content} />
       {restored ? <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discard} /> : null}
       {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
     </div>
