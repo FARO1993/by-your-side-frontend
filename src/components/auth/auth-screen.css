@@ -1,0 +1,239 @@
+/*
+  Login / Register — Reencuentro sereno.
+  Un solo logo. En desktop, el símbolo, el wordmark y el copy
+  comparten el borde izquierdo de .auth-brand-column.
+  Duración del encuentro: 800ms. Después, una sola respiración.
+  Reduced motion: sin desplazamiento, solo un fade corto.
+*/
+
+.auth-screen {
+  --auth-transition: 420ms;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  overflow-x: clip;
+}
+
+.auth-brand {
+  padding: max(2rem, env(safe-area-inset-top)) 1.25rem 0;
+}
+
+.auth-brand-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 24rem;
+  min-width: 0;
+  margin-inline: auto;
+  text-align: left;
+}
+
+.auth-logo {
+  align-self: flex-start;
+  width: fit-content;
+}
+
+/* Mobile lockup: pull the wordmark toward the mark.
+   Desktop keeps the previous 0.75rem gap. */
+.auth-wordmark {
+  margin-top: -0.35rem;
+}
+
+.auth-logo-mark {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  overflow: visible;
+}
+
+.auth-logo-presence,
+.auth-logo-listening {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.auth-logo-presence {
+  animation: auth-presence 800ms var(--ease-calm) both;
+}
+
+.auth-logo-listening {
+  animation: auth-listening 800ms var(--ease-calm) both;
+}
+
+.auth-logo-mark {
+  animation: auth-breath 640ms var(--ease-calm) 800ms both;
+}
+
+.auth-emotional {
+  display: none;
+}
+
+.auth-panel {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 1.5rem 1.25rem max(2.5rem, env(safe-area-inset-bottom));
+}
+
+.auth-panel-inner {
+  width: 100%;
+  max-width: 24rem;
+  min-width: 0;
+}
+
+.auth-panel.is-success {
+  pointer-events: none;
+}
+
+.auth-panel.is-success .auth-panel-inner {
+  animation: auth-form-fade var(--auth-transition) var(--ease-calm) forwards;
+}
+
+.auth-panel :focus-visible {
+  outline: 2px solid var(--listening);
+  outline-offset: 2px;
+}
+
+.auth-panel input:focus {
+  border-color: var(--listening);
+}
+
+.auth-panel input[aria-invalid='true'] {
+  border-color: var(--presence-strong);
+}
+
+.auth-panel input[aria-invalid='true']:focus-visible {
+  outline-color: var(--presence-strong);
+}
+
+.auth-panel p[id$='-error'] {
+  color: var(--presence-strong);
+}
+
+@media (min-width: 1024px) {
+  .auth-screen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .auth-brand {
+    display: flex;
+    align-items: center;
+    padding: 4rem 3rem 4rem 3.5rem;
+    background-image: linear-gradient(
+      to bottom right,
+      var(--presence-soft),
+      var(--cream),
+      var(--listening-soft)
+    );
+  }
+
+  .auth-brand-column {
+    margin-inline: 0;
+    max-width: 28rem;
+  }
+
+  .auth-logo-mark {
+    width: 4.75rem;
+    height: 4.75rem;
+  }
+
+  .auth-wordmark {
+    margin-top: 0.75rem;
+  }
+
+  .auth-emotional {
+    display: block;
+  }
+
+  .auth-panel {
+    align-items: center;
+    padding: 3rem 2.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .auth-brand {
+    padding-left: 4.5rem;
+    padding-right: 4rem;
+  }
+}
+
+@keyframes auth-presence {
+  0% {
+    opacity: 0.88;
+    transform: translateX(-9px);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes auth-listening {
+  0% {
+    opacity: 0.88;
+    transform: translateX(9px);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes auth-breath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+
+@keyframes auth-logo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-form-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-screen {
+    --auth-transition: 160ms;
+  }
+
+  .auth-logo-presence,
+  .auth-logo-listening,
+  .auth-logo-mark {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .auth-logo {
+    animation: auth-logo-in 180ms var(--ease-calm) both;
+  }
+}

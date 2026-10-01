@@ -9,20 +9,23 @@ import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/cn';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../lib/visual';
 import Avatar from '../components/Avatar';
+import { DraftNotice } from '../components/byourside/draft-notice';
+import { useDraft } from '../hooks/useDraft';
+import { draftKey } from '../lib/drafts';
 import { Button, Card } from '../components/byourside/ui';
 
 const moods = Object.entries(STATUS_MOOD_UI) as [StatusMood, { label: string; tone: keyof typeof MOOD_TONE_STYLES }][];
 
 const audiences: { value: CreatePostRequest['visibility']; label: string; icon: typeof Globe }[] = [
-  { value: 'PUBLIC', label: 'Toda la comunidad', icon: Globe },
-  { value: 'FOLLOWERS_ONLY', label: 'Quienes me acompañan', icon: Users },
-  { value: 'PRIVATE', label: 'Solo para mí', icon: Lock },
+  { value: 'PUBLIC', label: 'Público', icon: Globe },
+  { value: 'FOLLOWERS_ONLY', label: 'Solo seguidores', icon: Users },
+  { value: 'PRIVATE', label: 'Solo yo', icon: Lock },
 ];
 
 export default function CreatePostPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [content, setContent] = useState('');
+  const { text: content, setText: setContent, discard, restored } = useDraft(draftKey(user?.id, 'create-post'));
   const [mood, setMood] = useState<StatusMood | null>(null);
   const [visibility, setVisibility] = useState<CreatePostRequest['visibility']>('PUBLIC');
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +41,7 @@ export default function CreatePostPage() {
     try {
       if (mood) await setStatus(mood);
       await createPost({ content: content.trim(), visibility });
+      discard();
       navigate('/feed');
     } catch (err) {
       if (axios.isAxiosError<ApiErrorResponse>(err)) {
@@ -83,9 +87,12 @@ export default function CreatePostPage() {
             placeholder="¿Qué querés compartir hoy? No hace falta que esté perfecto."
             className="w-full resize-none bg-transparent text-[1.05rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
-          <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-            {remaining} caracteres
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <DraftNotice restored={restored} hasText={content.trim() !== ''} onDiscard={discard} />
+            <p className="ml-auto text-right text-xs text-muted-foreground" aria-live="polite">
+              {remaining} caracteres
+            </p>
+          </div>
 
           <div>
             <p className="mb-2 text-sm font-medium">¿Cómo estás hoy? (opcional)</p>
@@ -113,6 +120,7 @@ export default function CreatePostPage() {
                 <button
                   key={value}
                   type="button"
+                  aria-pressed={visibility === value}
                   onClick={() => setVisibility(value)}
                   className={cn(
                     'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm',

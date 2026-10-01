@@ -13,6 +13,7 @@ import { cn } from '../../lib/cn';
 import Avatar from '../Avatar';
 import { Button, IconButton } from './ui';
 import { Logo } from './logo';
+import { ThemeToggle } from './theme-toggle';
 
 export type AppShellRoute =
   | 'feed'
@@ -60,6 +61,26 @@ const primaryNav = [
   { id: 'notifications' as const, label: 'Novedades', icon: Bell },
   { id: 'profile' as const, label: 'Perfil', icon: User },
 ];
+
+function formatNotificationBadge(count: number | undefined): string | null {
+  if (!count || count <= 0) return null;
+  return count > 9 ? '9+' : String(count);
+}
+
+function notificationAriaLabel(count: number | undefined): string | undefined {
+  if (!count || count <= 0) return undefined;
+  return `Novedades, ${count} sin leer`;
+}
+
+function NotificationBadge({ count }: { count: number | undefined }) {
+  const label = formatNotificationBadge(count);
+  if (!label) return null;
+  return (
+    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-presence px-1 text-[0.65rem] font-semibold leading-none text-presence-foreground">
+      {label}
+    </span>
+  );
+}
 
 export function AppShell({
   active,
@@ -135,6 +156,7 @@ function DesktopNav({
                 key={id}
                 type="button"
                 aria-current={current ? 'page' : undefined}
+                aria-label={id === 'notifications' ? notificationAriaLabel(unread?.notifications) : undefined}
                 onClick={() => onNavigate(id)}
                 className={cn(
                   'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ease-[var(--ease-calm)]',
@@ -145,6 +167,7 @@ function DesktopNav({
               >
                 <Icon className="size-4" />
                 {label}
+                {id === 'notifications' ? <NotificationBadge count={unread?.notifications} /> : null}
               </button>
             );
           })}
@@ -175,6 +198,7 @@ function DesktopNav({
           >
             <Heart className="size-5" />
           </IconButton>
+          <ThemeToggle />
           <Button size="sm" className="ml-2" onClick={() => onNavigate('create')}>
             <Plus className="size-4" />
             Compartir
@@ -223,6 +247,7 @@ function MobileTopBar({
         >
           <Heart className="size-5" />
         </IconButton>
+        <ThemeToggle />
       </div>
     </header>
   );
@@ -272,6 +297,7 @@ function MobileTabBar({
               key={id}
               type="button"
               aria-current={current ? 'page' : undefined}
+              aria-label={id === 'notifications' ? notificationAriaLabel(unread?.notifications) : undefined}
               onClick={() => onNavigate(id === 'profile' && !authenticated ? 'login' : id)}
               className={cn(
                 'relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[0.65rem] font-medium',
@@ -280,8 +306,10 @@ function MobileTabBar({
             >
               <span className="relative">
                 <Icon className="size-5" strokeWidth={current ? 2.4 : 2} />
-                {id === 'notifications' && unread?.notifications && unread.notifications > 0 ? (
-                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-presence" />
+                {id === 'notifications' && formatNotificationBadge(unread?.notifications) ? (
+                  <span className="pointer-events-none absolute -top-2.5 -right-3.5">
+                    <NotificationBadge count={unread?.notifications} />
+                  </span>
                 ) : null}
               </span>
               {label}

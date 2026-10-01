@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChatNotificationsProvider, useChatNotifications } from '../context/ChatNotificationsContext';
 import { useAuth } from '../context/AuthContext';
-import { useNotificationUnread } from '../hooks/useNotificationUnread';
+import { NotificationUnreadProvider } from '../context/NotificationUnreadProvider';
+import { useNotificationUnread } from '../context/notificationUnreadContext';
 import { AppShell, type AppShellRoute, type AppShellWidth } from './byourside/app-shell';
 
 function pathFromRoute(route: AppShellRoute, userId?: string): string {
@@ -35,7 +36,7 @@ function pathFromRoute(route: AppShellRoute, userId?: string): string {
 
 function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/messages')) return 'messages';
-  if (pathname.startsWith('/profile')) return 'profile';
+  if (pathname.startsWith('/profile') || pathname.startsWith('/account')) return 'profile';
   if (pathname.startsWith('/posts')) return 'post';
   if (pathname.startsWith('/discover')) return 'discover';
   if (pathname.startsWith('/companion')) return 'companion';
@@ -79,7 +80,7 @@ function RouterAppShell({
       authenticated={Boolean(user)}
       user={user}
       onLogout={() => {
-        logout();
+        void logout();
         navigate('/login');
       }}
     >
@@ -101,9 +102,11 @@ function AuthenticatedAppShell({ children }: { children: ReactNode }) {
 export default function Layout() {
   return (
     <ChatNotificationsProvider>
-      <AuthenticatedAppShell>
-        <Outlet />
-      </AuthenticatedAppShell>
+      <NotificationUnreadProvider>
+        <AuthenticatedAppShell>
+          <Outlet />
+        </AuthenticatedAppShell>
+      </NotificationUnreadProvider>
     </ChatNotificationsProvider>
   );
 }
@@ -114,7 +117,9 @@ export function HelpLayout({ children }: { children: ReactNode }) {
   if (user) {
     return (
       <ChatNotificationsProvider>
-        <AuthenticatedAppShell>{children}</AuthenticatedAppShell>
+        <NotificationUnreadProvider>
+          <AuthenticatedAppShell>{children}</AuthenticatedAppShell>
+        </NotificationUnreadProvider>
       </ChatNotificationsProvider>
     );
   }

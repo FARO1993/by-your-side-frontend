@@ -1,5 +1,8 @@
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
   username: string;
   role: string;
 }
@@ -13,6 +16,9 @@ export interface User {
   avatarUrl: string | null;
   role: string;
   createdAt: string;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
+  profileVisibility?: ProfileVisibility;
 }
 
 export interface LoginCredentials {
@@ -43,6 +49,14 @@ export interface UserSummary {
   avatarUrl: string | null;
 }
 
+export type PostResponseType =
+  | 'WITH_YOU'
+  | 'NOT_ALONE'
+  | 'HUG'
+  | 'READING'
+  | 'TELL_ME_MORE'
+  | 'LISTENING';
+
 export interface Post {
   id: string;
   author: UserSummary;
@@ -51,8 +65,16 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
   followedByCurrentUser: boolean;
-  supportCount: number;
-  supportedByCurrentUser: boolean;
+  presenceCount: number;
+  listeningCount: number;
+  currentUserResponseType: PostResponseType | null;
+}
+
+export interface PostResponseSummary {
+  postId: string;
+  type: PostResponseType | null;
+  presenceCount: number;
+  listeningCount: number;
 }
 
 // Espejo de Page<T> de Spring Data (lo que devuelve GET /api/posts/feed)
@@ -86,7 +108,11 @@ export interface FollowResponse {
   followerId: string;
   followingId: string;
   createdAt: string;
+  followState: DiscoverFollowState;
+  requestId: string | null;
 }
+
+export type CompanionPreferenceType = 'LISTEN' | 'TALK' | 'DISTRACT';
 
 export interface PublicUserProfile {
   id: string;
@@ -98,7 +124,15 @@ export interface PublicUserProfile {
   followersCount: number;
   followingCount: number;
   followedByCurrentUser: boolean;
+  companionPreferences: CompanionPreferenceType[] | null;
+  profileVisibility: ProfileVisibility;
+  followState: DiscoverFollowState;
+  blockedByCurrentUser: boolean;
+  mutedByCurrentUser: boolean;
 }
+
+export type ProfileVisibility = 'PUBLIC' | 'PRIVATE';
+export type DiscoverFollowState = 'NONE' | 'REQUESTED' | 'FOLLOWING';
 
 export interface DiscoverUser {
   id: string;
@@ -106,19 +140,27 @@ export interface DiscoverUser {
   displayName: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  profileVisibility: ProfileVisibility;
+  followState: DiscoverFollowState;
+  available: boolean;
+  statusMood: StatusMood | null;
 }
 
-export interface SupportSummary {
-  postId: string;
-  supportCount: number;
-  supportedByCurrentUser: boolean;
-}
+export type NotificationType =
+  | 'NEW_FOLLOWER'
+  | 'NEW_COMMENT'
+  | 'NEW_POST_RESPONSE'
+  | 'NEW_STATUS_REACTION'
+  | 'FOLLOW_REQUEST_RECEIVED'
+  | 'FOLLOW_REQUEST_ACCEPTED';
 
 export interface Notification {
   id: string;
   actor: UserSummary;
-  type: 'NEW_FOLLOWER' | 'NEW_COMMENT' | 'NEW_SUPPORT'| 'NEW_STATUS_REACTION';
+  type: NotificationType;
   postId: string | null;
+  statusId: string | null;
+  followRequestId: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -153,12 +195,46 @@ export interface Conversation {
   unreadCount: number;
 }
 
-export type CompanionIntent = 'TALK' | 'DISTRACTION' | 'WATCH_TOGETHER' | 'MUSIC' | 'LAUGH' | 'JUST_COMPANY';
+export type NeedType = 'LISTEN_TO_ME' | 'TALK' | 'GET_OPINION' | 'DISTRACTION' | 'JUST_COMPANY';
 
-export interface Availability {
+export type OfferingType = 'LISTEN' | 'TALK' | 'DISTRACT';
+
+export interface CompanionNeed {
   id: string;
-  user: UserSummary;
-  intent: CompanionIntent;
+  type: NeedType;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface CompanionOffering {
+  id: string;
+  type: OfferingType;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface CompanionCandidate {
+  user: UserSummary;
+  offeringType: OfferingType;
+  expiresAt: string;
+}
+
+export interface PublicAvailability {
+  available: true;
+  offeringType: OfferingType;
+  expiresAt: string;
+}
+
+export interface CompanionPreferencesResponse {
+  types: CompanionPreferenceType[];
+}
+// Espejo de report/ReportReason y ReportTargetType del backend (POST /api/reports)
+export type ReportReason = 'SELF_HARM_RISK' | 'HARASSMENT' | 'SPAM' | 'HATE_SPEECH' | 'OTHER';
+export type ReportTargetType = 'POST' | 'COMMENT' | 'USER';
+
+export interface CreateReportRequest {
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
 }

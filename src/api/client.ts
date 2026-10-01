@@ -1,4 +1,7 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import { authStorage } from '../auth/authStorage';
+import { isPublicAuthRequest } from '../auth/publicAuth';
+import { invalidateSession, isRefreshSuspended, refreshSession } from '../auth/session';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -8,28 +11,46 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  if (isPublicAuthRequest(config.url)) {
+    return config;
+  }
+
+  const token = authStorage.getAccessToken();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
 
-// No redirigir en 401 si la request era al propio login -- ahi un 401
-// significa "credenciales invalidas", no "tu sesion expiro". Redirigir
-// en ese caso recarga la pagina entera (window.location.href) y borra
-// el estado de error que el formulario acaba de setear.
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+  async (error: AxiosError) => {
+    const config = error.config as InternalAxiosRequestConfig | undefined;
+    const status = error.response?.status;
 
-    if (error.response?.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    if (!config || status !== 401 || isPublicAuthRequest(config.url) || isRefreshSuspended()) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
+
+    if (config._retry) {
+      invalidateSession();
+      return Promise.reject(error);
+    }
+
+    if (!authStorage.getRefreshToken()) {
+      invalidateSession();
+      return Promise.reject(error);
+    }
+
+    config._retry = true;
+    const nextToken = await refreshSession();
+    if (!nextToken) {
+      return Promise.reject(error);
+    }
+
+    config.headers.set('Authorization', `Bearer ${nextToken}`);
+    return apiClient(config);
+  },
 );
 
 export default apiClient;

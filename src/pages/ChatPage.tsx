@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
+import { unblockUser } from '../api/blocks';
 import { getConversations, getMessages, sendMessage } from '../api/chat';
+import { getPublicProfile } from '../api/users';
 import { subscribeToUserQueue } from '../api/socket';
 import type { Conversation, Message } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { useChatNotifications } from '../context/ChatNotificationsContext';
+import { useDraft } from '../hooks/useDraft';
+import { draftKey } from '../lib/drafts';
 import { timeAgo } from '../lib/timeAgo';
 import { cn } from '../lib/cn';
 import Avatar from '../components/Avatar';
+import { DraftNotice } from '../components/byourside/draft-notice';
 import { ConversationList, MessagesChrome } from '../components/byourside/messages-chrome';
-import { Spinner } from '../components/byourside/ui';
+import { Button, Spinner } from '../components/byourside/ui';
+import { ChatSafetyMenu, type ChatRelation } from '../components/safety/ChatSafetyMenu';
 
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -20,10 +26,60 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<Conversation['otherUser'] | null>(null);
-  const [content, setContent] = useState('');
+  const {
+    text: content,
+    setText: setContent,
+    discard: discardDraft,
+    restored: draftRestored,
+  } = useDraft(conversationId ? draftKey(user?.id, `chat:${conversationId}`) : null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);
+  // Relación con la otra persona (bloqueo/silencio que hice YO), atada a su id
+  // para que al cambiar de conversación no se arrastre la anterior.
+  const [relationState, setRelationState] = useState<{ userId: string; value: ChatRelation } | null>(null);
+  const [unblocking, setUnblocking] = useState(false);
+  const [unblockError, setUnblockError] = useState<string | null>(null);
+  const otherUserId = otherUser?.id ?? null;
+  const relation = relationState && relationState.userId === otherUserId ? relationState.value : null;
+
+  useEffect(() => {
+    if (!otherUserId) return undefined;
+    let cancelled = false;
+    getPublicProfile(otherUserId)
+      .then((profile) => {
+        if (cancelled) return;
+        setRelationState({
+          userId: otherUserId,
+          value: { blocked: profile.blockedByCurrentUser, muted: profile.mutedByCurrentUser },
+        });
+      })
+      .catch(() => {
+        // Sin perfil visible: el menú ofrece solo ver perfil y reportar.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [otherUserId]);
+
+  function updateRelation(value: ChatRelation) {
+    if (otherUserId) setRelationState({ userId: otherUserId, value });
+  }
+
+  async function handleUnblock() {
+    if (!otherUserId || !relation) return;
+    setUnblocking(true);
+    setUnblockError(null);
+    try {
+      await unblockUser(otherUserId);
+      updateRelation({ ...relation, blocked: false });
+    } catch {
+      setUnblockError('No pudimos desbloquear. Probá de nuevo.');
+    } finally {
+      setUnblocking(false);
+    }
+  }
 
   useEffect(() => {
     if (!conversationId) return;
@@ -54,8 +110,14 @@ export default function ChatPage() {
     if (!conversationId || !content.trim()) return;
     const trimmed = content;
     setContent('');
-    const message = await sendMessage(conversationId, trimmed);
-    setMessages((prev) => [...prev, message]);
+    setSendError(null);
+    try {
+      const message = await sendMessage(conversationId, trimmed);
+      setMessages((prev) => [...prev, message]);
+    } catch {
+      setContent(trimmed);
+      setSendError('No pudimos enviar el mensaje.');
+    }
   }
 
   function handleKey(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -90,13 +152,20 @@ export default function ChatPage() {
               <ArrowLeft className="size-5" />
             </button>
             {otherUser ? <Avatar avatarUrl={otherUser.avatarUrl} name={name} size="sm" /> : null}
-            <div>
-              <p className="font-medium">{name}</p>
-              <p className="inline-flex items-center gap-1.5 text-xs text-listening-strong">
-                <span className="size-1.5 rounded-full bg-listening" />
-                Está para escucharte
-              </p>
+            <div className="min-w-0">
+              <p className="truncate font-medium">{name}</p>
+              {relation?.blocked ? (
+                <p className="text-xs text-muted-foreground">Bloqueaste a esta persona</p>
+              ) : (
+                <p className="inline-flex items-center gap-1.5 text-xs text-listening-strong">
+                  <span className="size-1.5 rounded-full bg-listening" />
+                  Está para escucharte
+                </p>
+              )}
             </div>
+            {otherUser ? (
+              <ChatSafetyMenu userId={otherUser.id} name={name} relation={relation} onRelationChange={updateRelation} />
+            ) : null}
           </header>
 
           <div
@@ -138,25 +207,51 @@ export default function ChatPage() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-border/60 bg-background p-3">
-            <textarea
-              value={content}
-              maxLength={2000}
-              rows={1}
-              onChange={(event) => setContent(event.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Escribí un mensaje…"
-              className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-input bg-card px-4 py-2.5 text-sm focus:border-presence focus-visible:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!content.trim()}
-              aria-label="Enviar"
-              className="flex size-11 items-center justify-center rounded-full bg-presence text-presence-foreground shadow-soft disabled:opacity-50"
-            >
-              <Send className="size-5" />
-            </button>
-          </form>
+          {relation?.blocked ? (
+            <div className="border-t border-border/60 bg-background p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Bloqueaste a {name}. No pueden enviarse mensajes nuevos.
+              </p>
+              <Button type="button" size="sm" variant="outline" className="mt-2" loading={unblocking} onClick={() => void handleUnblock()}>
+                Desbloquear
+              </Button>
+              {unblockError ? (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  {unblockError}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="border-t border-border/60 bg-background p-3">
+              {sendError ? (
+                <p role="alert" className="mb-2 text-sm text-destructive">
+                  {sendError}
+                </p>
+              ) : null}
+              {draftRestored ? (
+                <DraftNotice restored hasText={content.trim() !== ''} onDiscard={discardDraft} className="mb-2 px-1" />
+              ) : null}
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={content}
+                  maxLength={2000}
+                  rows={1}
+                  onChange={(event) => setContent(event.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Escribí un mensaje…"
+                  className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-input bg-card px-4 py-2.5 text-sm focus:border-presence focus-visible:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!content.trim()}
+                  aria-label="Enviar"
+                  className="flex size-11 items-center justify-center rounded-full bg-presence text-presence-foreground shadow-soft disabled:opacity-50"
+                >
+                  <Send className="size-5" />
+                </button>
+              </div>
+            </form>
+          )}
         </section>
       </div>
     </MessagesChrome>

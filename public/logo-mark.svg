@@ -1,4 +1,8 @@
 <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="18" cy="24" r="14" fill="none" stroke="#E8876F" stroke-width="3"/>
-  <circle cx="30" cy="24" r="14" fill="none" stroke="#4F9C8D" stroke-width="3"/>
+  <g id="figure-presence">
+    <circle cx="18" cy="24" r="14" fill="none" stroke="#E8876F" stroke-width="3"/>
+  </g>
+  <g id="figure-listening">
+    <circle cx="30" cy="24" r="14" fill="none" stroke="#4F9C8D" stroke-width="3"/>
+  </g>
 </svg>
