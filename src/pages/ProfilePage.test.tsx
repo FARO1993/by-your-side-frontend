@@ -280,10 +280,25 @@ describe('ProfilePage', () => {
     expect(screen.queryByText('Disponible ahora')).not.toBeInTheDocument();
   });
 
+  it('does not show zero relationship counts', async () => {
+    api.getPublicProfile.mockResolvedValue(profile({ followersCount: 0, followingCount: 2 }));
+    renderProfile();
+    const metrics = (await screen.findByText(/acompañás/)).closest('p');
+    expect(metrics).toHaveTextContent('2 acompañás');
+    expect(metrics).not.toHaveTextContent('te acompañan');
+  });
+
+  it('shows a gentle line instead of 0 · 0 on my own profile', async () => {
+    api.getPublicProfile.mockResolvedValue(profile({ followersCount: 0, followingCount: 0 }));
+    renderProfile();
+    expect(await screen.findByText('Tu red se arma de a poco, a tu ritmo.')).toBeInTheDocument();
+    expect(screen.queryByText(/te acompañan/)).not.toBeInTheDocument();
+  });
+
   it('keeps publications and received presence as tabs without a fake count', async () => {
     renderProfile();
 
-    expect(await screen.findByText('Todavía no publicaste nada')).toBeInTheDocument();
+    expect(await screen.findByText('Todavía no compartiste nada')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: 'Presencia recibida' }));
     expect(screen.getByRole('heading', { name: 'La presencia que te dejaron vive acá' })).toBeInTheDocument();
     expect(
@@ -329,7 +344,7 @@ describe('ProfilePage', () => {
     await waitFor(() => expect(api.getPublicAvailability).toHaveBeenCalledWith('other'));
     expect(screen.queryByRole('heading', { name: 'Cómo suele estar para otros' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Cambiar contraseña' })).not.toBeInTheDocument();
-    expect(screen.getByText('Esta persona no tiene publicaciones visibles')).toBeInTheDocument();
+    expect(screen.getByText('Todavía no hay publicaciones para ver acá')).toBeInTheDocument();
     expect(screen.getByText(/te acompañan/).closest('p')).toHaveTextContent('2 te acompañan · 3 acompañás');
   });
 
@@ -372,7 +387,7 @@ describe('ProfilePage', () => {
     renderProfile();
 
     expect(await screen.findByText('Hoy necesito un rato de calma.')).toBeInTheDocument();
-    expect(screen.queryByText('Todavía no publicaste nada')).not.toBeInTheDocument();
+    expect(screen.queryByText('Todavía no compartiste nada')).not.toBeInTheDocument();
   });
 
   it('shows availability on a private profile when the public lookup returns an offering', async () => {
@@ -491,7 +506,7 @@ describe('ProfilePage', () => {
     api.getPublicProfile.mockRejectedValue(new Error('missing'));
     renderProfile();
 
-    expect(await screen.findByText('No se pudo cargar este perfil')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos abrir este perfil. Probá de nuevo en un rato.')).toBeInTheDocument();
     expect(screen.queryByText(/no tiene estado/i)).not.toBeInTheDocument();
   });
 
@@ -578,7 +593,9 @@ describe('ProfilePage', () => {
     await userEvent.type(name, '  Ana  ');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('displayName cannot be blank');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Tu nombre no puede quedar vacío.');
+    expect(alert).not.toHaveTextContent('displayName');
     expect(name).toHaveValue('  Ana  ');
     expect(screen.getByRole('heading', { name: 'Ana' })).toBeInTheDocument();
   });
@@ -777,7 +794,7 @@ describe('ProfilePage', () => {
   it('treats a profile hidden by the other person as unavailable', async () => {
     api.getPublicProfile.mockRejectedValue(new AxiosError('missing'));
     renderProfile('/profile/other');
-    expect(await screen.findByText('No se pudo cargar este perfil')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos abrir este perfil. Probá de nuevo en un rato.')).toBeInTheDocument();
     expect(screen.queryByText(/bloque/i)).not.toBeInTheDocument();
   });
 

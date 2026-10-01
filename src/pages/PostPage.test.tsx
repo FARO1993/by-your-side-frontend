@@ -38,7 +38,7 @@ describe('PostPage privacy', () => {
 
     expect(await screen.findByText('texto visible')).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'abrir otro' }));
-    expect(await screen.findByText('No se pudo cargar este post')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos abrir esta publicación. Probá de nuevo.')).toBeInTheDocument();
     expect(screen.queryByText('texto visible')).not.toBeInTheDocument();
   });
 });

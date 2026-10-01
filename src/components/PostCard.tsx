@@ -73,7 +73,11 @@ export default function PostCard({ post }: { post: Post }) {
       ) : null}
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3.5 text-xs text-muted-foreground">
-        <ResponseCounts presenceCount={response.presenceCount} listeningCount={response.listeningCount} />
+        <ResponseCounts
+          presenceCount={response.presenceCount}
+          listeningCount={response.listeningCount}
+          isOwnPost={isOwnPost}
+        />
         <button
           type="button"
           onClick={() => setShowComments((current) => !current)}
@@ -93,8 +97,19 @@ export default function PostCard({ post }: { post: Post }) {
   );
 }
 
-function ResponseCounts({ presenceCount, listeningCount }: { presenceCount: number; listeningCount: number }) {
-  if (presenceCount === 0 && listeningCount === 0) return null;
+function ResponseCounts({
+  presenceCount,
+  listeningCount,
+  isOwnPost,
+}: {
+  presenceCount: number;
+  listeningCount: number;
+  isOwnPost: boolean;
+}) {
+  if (presenceCount === 0 && listeningCount === 0) {
+    // Sin "0 respuestas": en lo propio, un recordatorio de que el silencio está bien.
+    return isOwnPost ? <span>Tu mensaje está acá. Las respuestas llegan a su tiempo.</span> : <span />;
+  }
 
   return (
     <div className="flex flex-wrap gap-4">

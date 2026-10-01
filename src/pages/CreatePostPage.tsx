@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Globe, Lock, Users } from 'lucide-react';
-import axios from 'axios';
 import { createPost } from '../api/posts';
 import { setStatus } from '../api/statuses';
-import type { ApiErrorResponse, CreatePostRequest, StatusMood } from '../api/types';
+import type { CreatePostRequest, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/cn';
+import { friendlyError } from '../lib/friendlyError';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../lib/visual';
 import Avatar from '../components/Avatar';
 import { DraftNotice } from '../components/byourside/draft-notice';
@@ -45,11 +45,7 @@ export default function CreatePostPage() {
       discard();
       navigate('/feed');
     } catch (err) {
-      if (axios.isAxiosError<ApiErrorResponse>(err)) {
-        setError(err.response?.data.message ?? 'Error al crear el post');
-      } else {
-        setError('Error al crear el post');
-      }
+      setError(friendlyError(err, 'No pudimos compartirlo. Tu texto sigue acá, podés intentar de nuevo.'));
     } finally {
       setSubmitting(false);
     }

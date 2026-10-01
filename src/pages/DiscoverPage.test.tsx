@@ -254,7 +254,7 @@ describe('DiscoverPage', () => {
     renderDiscover();
 
     await user.click(await screen.findByRole('button', { name: 'Acompañar' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo completar la acción.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos hacerlo ahora. Probá de nuevo en un momento.');
     expect(screen.getByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
   });
 
@@ -375,7 +375,7 @@ describe('DiscoverPage', () => {
     const user = userEvent.setup();
     renderDiscover();
 
-    expect(await screen.findByText('No se pudo cargar la lista de personas.')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos traer personas para mostrarte. Probá de nuevo.')).toBeInTheDocument();
     api.discoverUsers.mockResolvedValueOnce(result([person()]));
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByText('Ana')).toBeInTheDocument();

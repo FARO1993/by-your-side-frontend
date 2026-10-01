@@ -66,7 +66,7 @@ export default function FollowButton({
         await refreshState().catch(() => setState('NONE'));
         return;
       }
-      setError('No se pudo completar la acción.');
+      setError('No pudimos hacerlo ahora. Probá de nuevo en un momento.');
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +89,7 @@ export default function FollowButton({
         await refreshState().catch(() => undefined);
         return;
       }
-      setError('No se pudo completar la acción.');
+      setError('No pudimos hacerlo ahora. Probá de nuevo en un momento.');
     } finally {
       setSubmitting(false);
     }
