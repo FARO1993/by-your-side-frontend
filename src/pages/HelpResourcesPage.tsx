@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, MessageCircle, Phone, Wind } from 'lucide-react';
+import { ArrowLeft, ExternalLink, MessageCircle, Phone } from 'lucide-react';
 import { Button, Card, PresenceGlyph, SectionTitle } from '../components/byourside/ui';
+import { BreathingExercise } from '../components/byourside/breathing-exercise';
 import { Logo } from '../components/byourside/logo';
 
 const helpLines = [
@@ -104,16 +105,8 @@ export default function HelpResourcesPage() {
 
       <section>
         <SectionTitle>Mientras tanto</SectionTitle>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Card className="p-5">
-            <span className="flex size-10 items-center justify-center rounded-full bg-listening-soft text-listening-strong">
-              <Wind className="size-4" />
-            </span>
-            <p className="mt-3 font-serif text-lg">Respirar un momento</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              No hace falta resolverlo todo ahora. Podés ir despacio.
-            </p>
-          </Card>
+        <div className="mt-3 grid grid-cols-1 gap-3">
+          <BreathingExercise />
           <Card className="p-5">
             <span className="flex size-10 items-center justify-center rounded-full bg-presence-soft text-presence-strong">
               <MessageCircle className="size-4" />
