@@ -10,6 +10,7 @@ import { cn } from '../lib/cn';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../lib/visual';
 import Avatar from '../components/Avatar';
 import { DraftNotice } from '../components/byourside/draft-notice';
+import { CrisisNotice } from '../components/safety/CrisisNotice';
 import { useDraft } from '../hooks/useDraft';
 import { draftKey } from '../lib/drafts';
 import { Button, Card } from '../components/byourside/ui';
@@ -87,6 +88,7 @@ export default function CreatePostPage() {
             placeholder="¿Qué querés compartir hoy? No hace falta que esté perfecto."
             className="w-full resize-none bg-transparent text-[1.05rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
+          <CrisisNotice text={content} />
           <div className="flex flex-wrap items-start justify-between gap-2">
             <DraftNotice restored={restored} hasText={content.trim() !== ''} onDiscard={discard} />
             <p className="ml-auto text-right text-xs text-muted-foreground" aria-live="polite">

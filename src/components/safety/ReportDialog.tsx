@@ -29,6 +29,7 @@ export function ReportDialog({
   name,
   onClose,
   onBlock,
+  initialReason = null,
 }: {
   targetType: ReportTargetType;
   targetId: string;
@@ -36,8 +37,10 @@ export function ReportDialog({
   onClose: () => void;
   /** Si se pasa, al terminar se ofrece bloquear también. */
   onBlock?: () => void;
+  /** Motivo preseleccionado (se puede cambiar). */
+  initialReason?: ReportReason | null;
 }) {
-  const [reason, setReason] = useState<ReportReason | null>(null);
+  const [reason, setReason] = useState<ReportReason | null>(initialReason);
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
