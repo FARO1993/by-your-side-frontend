@@ -41,7 +41,7 @@ export default function FeedPage() {
         setPosts(postsPage.content);
         setStatuses(statusesData);
       })
-      .catch(() => setError('No se pudo cargar el feed'))
+      .catch(() => setError('No pudimos traer lo último. A veces la conexión tarda; probá de nuevo.'))
       .finally(() => setLoading(false));
   }
 

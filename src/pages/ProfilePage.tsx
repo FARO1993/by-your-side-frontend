@@ -26,6 +26,7 @@ import PostCard from '../components/PostCard';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { Badge, Button, Card, EmptyState, ErrorState, TextArea, TextField } from '../components/byourside/ui';
 import { cn } from '../lib/cn';
+import { friendlyError } from '../lib/friendlyError';
 import { companionFailure, PREFERENCE_LABEL, PREFERENCE_ORDER, PUBLIC_AVAILABILITY_LABEL } from '../lib/companion';
 import { profileUpdatePayload } from '../lib/profile';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
@@ -92,7 +93,7 @@ export default function ProfilePage() {
   const latestStatus = ready?.latestStatus ?? null;
   const isOwn = Boolean(profile && currentUser?.id === profile.id);
   const loading = !ready && failedUserId !== userId;
-  const loadError = failedUserId === userId ? 'No se pudo cargar este perfil' : null;
+  const loadError = failedUserId === userId ? 'No pudimos abrir este perfil. Probá de nuevo en un rato.' : null;
 
   const ownProfileId = isOwn && profile ? profile.id : null;
 
@@ -141,7 +142,7 @@ export default function ProfilePage() {
   }
 
   if (error || loadError || !profile) {
-    return <ErrorState description={error ?? loadError ?? 'Perfil no encontrado'} />;
+    return <ErrorState description={error ?? loadError ?? 'Este perfil no está disponible.'} />;
   }
 
   const profileId = profile.id;
@@ -166,7 +167,7 @@ export default function ProfilePage() {
         prev && prev.profile.id === profileId ? { ...prev, profile: { ...prev.profile, avatarUrl: updated.avatarUrl } } : prev,
       );
     } catch {
-      setError('No se pudo subir la foto de perfil');
+      setError('No pudimos subir la foto. Probá con otra imagen o en un rato.');
     } finally {
       setUploading(false);
     }
@@ -271,8 +272,12 @@ export default function ProfilePage() {
       );
       setEditing(false);
     } catch (saveError) {
-      const message = axios.isAxiosError(saveError) ? saveError.response?.data?.message : null;
-      setProfileError(typeof message === 'string' && message.trim() ? message : 'No pudimos guardar el perfil.');
+      const message = axios.isAxiosError(saveError) ? String(saveError.response?.data?.message ?? '') : '';
+      setProfileError(
+        /displayName/i.test(message)
+          ? 'Tu nombre no puede quedar vacío.'
+          : friendlyError(saveError, 'No pudimos guardar el perfil. Probá de nuevo en un momento.'),
+      );
     } finally {
       setSavingProfile(false);
     }
@@ -453,11 +458,7 @@ export default function ProfilePage() {
             </form>
           ) : null}
 
-          <p className="mt-4 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{profile.followersCount}</span> te acompañan
-            <span aria-hidden="true"> · </span>
-            <span className="font-medium text-foreground">{profile.followingCount}</span> acompañás
-          </p>
+          {isOwn ? <ProfileMetrics followers={profile.followersCount} following={profile.followingCount} /> : null}
         </div>
       </Card>
 
@@ -504,7 +505,8 @@ export default function ProfilePage() {
         posts.length === 0 ? (
           <EmptyState
             className="px-6 py-8"
-            title={isOwn ? 'Todavía no publicaste nada' : 'Esta persona no tiene publicaciones visibles'}
+            title={isOwn ? 'Todavía no compartiste nada' : 'Todavía no hay publicaciones para ver acá'}
+            description={isOwn ? 'Cuando quieras, lo que compartas va a quedar acá. Sin apuro.' : undefined}
           />
         ) : (
           <div className="space-y-4">
@@ -600,3 +602,31 @@ export default function ProfilePage() {
   );
 }
 
+/**
+ * Relaciones del perfil, SOLO en el perfil propio.
+ * En perfiles ajenos no se muestran números: invitan a compararse ("los
+ * demás tienen más gente que yo") y no ayudan a acompañar. Si vos acompañás
+ * a esa persona ya se ve en el botón Acompañar/Acompañando.
+ * Los ceros no se muestran: sin nadie todavía, va un texto amable.
+ */
+function ProfileMetrics({ followers, following }: { followers: number; following: number }) {
+  const parts = [
+    followers > 0 ? { value: followers, label: 'te acompañan' } : null,
+    following > 0 ? { value: following, label: 'acompañás' } : null,
+  ].filter((part): part is { value: number; label: string } => part !== null);
+
+  if (parts.length === 0) {
+    return <p className="mt-4 text-sm text-muted-foreground">Tu red se arma de a poco, a tu ritmo.</p>;
+  }
+
+  return (
+    <p className="mt-4 text-sm text-muted-foreground">
+      {parts.map((part, index) => (
+        <span key={part.label}>
+          {index > 0 ? <span aria-hidden="true"> · </span> : null}
+          <span className="font-medium text-foreground">{part.value}</span> {part.label}
+        </span>
+      ))}
+    </p>
+  );
+}

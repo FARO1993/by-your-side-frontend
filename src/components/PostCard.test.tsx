@@ -204,3 +204,20 @@ describe('PostCard response errors stay non-destructive', () => {
     expect(screen.queryByText(/Escucha/)).not.toBeInTheDocument();
   });
 });
+
+describe('PostCard without responses', () => {
+  it('never shows zero counts, and reassures on my own post', () => {
+    auth.user = { id: 'author' };
+    renderCard(post());
+    expect(screen.getByText('Tu mensaje está acá. Las respuestas llegan a su tiempo.')).toBeInTheDocument();
+    expect(screen.queryByText(/\b0\b/)).not.toBeInTheDocument();
+    auth.user = { id: 'me' };
+  });
+
+  it('shows nothing about responses on someone else’s post without responses', () => {
+    auth.user = { id: 'me' };
+    renderCard(post());
+    expect(screen.queryByText(/Las respuestas llegan/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Presencia|Escucha \d/)).not.toBeInTheDocument();
+  });
+});

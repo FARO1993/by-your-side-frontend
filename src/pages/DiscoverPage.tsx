@@ -11,7 +11,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const LOAD_ERROR = 'No se pudo cargar la lista de personas.';
+const LOAD_ERROR = 'No pudimos traer personas para mostrarte. Probá de nuevo.';
 const SEARCH_ERROR = 'No pudimos buscar personas.';
 const MORE_ERROR = 'No pudimos cargar más personas.';
 const INVALID_QUERY = 'Esa búsqueda no es válida.';
