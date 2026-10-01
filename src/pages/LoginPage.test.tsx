@@ -40,7 +40,7 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Qué bueno verte de nuevo' })).toBeInTheDocument();
     expect(screen.getByText('Ingresá para reencontrarte con quienes te acompañan.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'No tenés que atravesarlo solo.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No tenés que atravesarlo en soledad.' })).toBeInTheDocument();
     expect(
       screen.getByText(
         'Un espacio tranquilo para volver, compartir cómo estás y encontrar a alguien que te acompañe.',
