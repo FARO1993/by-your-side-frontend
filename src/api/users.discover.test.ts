@@ -22,6 +22,7 @@ const page = {
       profileVisibility: 'PUBLIC',
       followState: 'NONE',
       available: true,
+      statusMood: 'NEED_TO_TALK',
     },
   ],
   totalElements: 1,
@@ -60,9 +61,10 @@ describe('discoverUsers', () => {
     });
   });
 
-  it('returns the page, including available', async () => {
+  it('returns the page, including available and statusMood', async () => {
     await expect(discoverUsers()).resolves.toEqual(page);
     expect(page.content[0].available).toBe(true);
+    expect(page.content[0].statusMood).toBe('NEED_TO_TALK');
   });
 
   it('rejects a failed request', async () => {

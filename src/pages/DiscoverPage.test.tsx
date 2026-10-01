@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   discoverUsers: vi.fn(),
   followUser: vi.fn(),
   unfollowUser: vi.fn(),
+  getUserStatus: vi.fn(),
 }));
 
 vi.mock('../api/users', () => ({
@@ -19,6 +20,10 @@ vi.mock('../api/users', () => ({
 vi.mock('../api/follows', () => ({
   followUser: api.followUser,
   unfollowUser: api.unfollowUser,
+}));
+
+vi.mock('../api/statuses', () => ({
+  getUserStatus: api.getUserStatus,
 }));
 
 import DiscoverPage from './DiscoverPage';
@@ -33,6 +38,7 @@ function person(overrides: Partial<DiscoverUser> = {}): DiscoverUser {
     profileVisibility: 'PUBLIC',
     followState: 'NONE',
     available: false,
+    statusMood: null,
     ...overrides,
   };
 }
@@ -65,6 +71,7 @@ describe('DiscoverPage', () => {
     api.discoverUsers.mockReset();
     api.followUser.mockReset();
     api.unfollowUser.mockReset();
+    api.getUserStatus.mockReset();
     api.followUser.mockResolvedValue({
       followerId: 'me',
       followingId: 'ana-id',
@@ -91,6 +98,96 @@ describe('DiscoverPage', () => {
 
     await user.click(screen.getByRole('link', { name: /Ana/ }));
     expect(await screen.findByText('Perfil')).toBeInTheDocument();
+  });
+
+  it('shows the status mood from the discover payload', async () => {
+    api.discoverUsers.mockResolvedValue(result([person({ statusMood: 'DIFFICULT_DAY' })]));
+    renderDiscover();
+
+    expect(await screen.findByText('Día difícil')).toBeInTheDocument();
+    expect(screen.queryByText('DIFFICULT_DAY')).not.toBeInTheDocument();
+    expect(api.getUserStatus).not.toHaveBeenCalled();
+  });
+
+  it('hides the mood when statusMood is null', async () => {
+    api.discoverUsers.mockResolvedValue(result([person({ statusMood: null })]));
+    renderDiscover();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.queryByText('Estoy bien')).not.toBeInTheDocument();
+    expect(screen.queryByText('Día difícil')).not.toBeInTheDocument();
+    expect(screen.queryByText('Necesito distraerme')).not.toBeInTheDocument();
+    expect(screen.queryByText('Necesito hablar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estoy acá para alguien')).not.toBeInTheDocument();
+    expect(screen.queryByText(/sin estado|no tiene estado/i)).not.toBeInTheDocument();
+  });
+
+  it('shows availability and mood as independent signals', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([
+        person({ available: true, statusMood: 'DIFFICULT_DAY' }),
+        person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null, available: false, statusMood: 'WELL' }),
+        person({ id: 'sol-id', username: 'sol', displayName: 'Sol', bio: null, available: true, statusMood: null }),
+      ]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Día difícil')).toBeInTheDocument();
+    expect(screen.getByText('Estoy bien')).toBeInTheDocument();
+    expect(screen.getAllByText('Disponible ahora')).toHaveLength(2);
+    const sol = screen.getByRole('link', { name: /Sol/ });
+    expect(sol).toHaveTextContent('Disponible ahora');
+    expect(sol).not.toHaveTextContent('Estoy bien');
+    expect(sol).not.toHaveTextContent('Día difícil');
+  });
+
+  it('maps every status mood to the existing copy', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([
+        person({ statusMood: 'WELL' }),
+        person({ id: 'b', username: 'b', displayName: 'Bea', bio: null, statusMood: 'NEED_DISTRACTION' }),
+        person({ id: 'c', username: 'c', displayName: 'Ciro', bio: null, statusMood: 'DIFFICULT_DAY' }),
+        person({ id: 'd', username: 'd', displayName: 'Dani', bio: null, statusMood: 'NEED_TO_TALK' }),
+        person({ id: 'e', username: 'e', displayName: 'Eva', bio: null, statusMood: 'HERE_FOR_SOMEONE' }),
+      ]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Estoy bien')).toBeInTheDocument();
+    expect(screen.getByText('Necesito distraerme')).toBeInTheDocument();
+    expect(screen.getByText('Día difícil')).toBeInTheDocument();
+    expect(screen.getByText('Necesito hablar')).toBeInTheDocument();
+    expect(screen.getByText('Estoy acá para alguien')).toBeInTheDocument();
+  });
+
+  it('does not show a mood for a private profile when statusMood is null', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([person({ profileVisibility: 'PRIVATE', bio: null, statusMood: null })]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.queryByText(/estoy bien|día difícil|necesito|estoy acá/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the mood for someone you already accompany', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([person({ followState: 'FOLLOWING', statusMood: 'HERE_FOR_SOMEONE' })]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Estoy acá para alguien')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Acompañás' })).toBeInTheDocument();
+  });
+
+  it('shows the mood while a follow request is pending', async () => {
+    api.discoverUsers.mockResolvedValue(
+      result([person({ followState: 'REQUESTED', statusMood: 'NEED_TO_TALK' })]),
+    );
+    renderDiscover();
+
+    expect(await screen.findByText('Necesito hablar')).toBeInTheDocument();
+    expect(screen.getByText('Solicitud enviada')).toBeInTheDocument();
   });
 
   it('shows a discreet availability signal only when the person is available', async () => {
@@ -166,7 +263,9 @@ describe('DiscoverPage', () => {
     renderDiscover();
     expect(await screen.findByText('Ana')).toBeInTheDocument();
 
-    api.discoverUsers.mockResolvedValue(result([person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null })]));
+    api.discoverUsers.mockResolvedValue(
+      result([person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null, statusMood: 'WELL' })]),
+    );
     vi.useFakeTimers();
     fireEvent.change(screen.getByLabelText('Buscar personas'), { target: { value: 'luz' } });
     expect(api.discoverUsers).not.toHaveBeenCalledWith(expect.objectContaining({ q: 'luz' }));
@@ -175,6 +274,7 @@ describe('DiscoverPage', () => {
     });
 
     expect(screen.getByText('Luz')).toBeInTheDocument();
+    expect(screen.getByText('Estoy bien')).toBeInTheDocument();
     expect(screen.queryByText('Ana')).not.toBeInTheDocument();
     expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'luz', page: 0, size: 20 }));
 
@@ -185,12 +285,14 @@ describe('DiscoverPage', () => {
     });
     expect(screen.getByText('No encontramos personas con esa búsqueda.')).toBeInTheDocument();
 
-    api.discoverUsers.mockResolvedValue(result([person()]));
+    api.discoverUsers.mockResolvedValue(result([person({ statusMood: 'DIFFICULT_DAY' })]));
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(300);
     });
     expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('Día difícil')).toBeInTheDocument();
+    expect(screen.queryByText('Estoy bien')).not.toBeInTheDocument();
     expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0, size: 20 }));
     expect(api.discoverUsers.mock.calls.at(-1)?.[0].q).toBeUndefined();
     vi.useRealTimers();
@@ -200,7 +302,9 @@ describe('DiscoverPage', () => {
     let resolveFirst: (value: Page<DiscoverUser>) => void = () => undefined;
     api.discoverUsers.mockImplementation((options: { q?: string }) => {
       if (options.q === 'fa') return new Promise<Page<DiscoverUser>>((resolve) => { resolveFirst = resolve; });
-      if (options.q === 'fac') return Promise.resolve(result([person({ id: 'fac-id', username: 'facu', displayName: 'Facu', bio: null })]));
+      if (options.q === 'fac') {
+        return Promise.resolve(result([person({ id: 'fac-id', username: 'facu', displayName: 'Facu', bio: null, statusMood: 'WELL' })]));
+      }
       return Promise.resolve(result([person()]));
     });
     renderDiscover();
@@ -216,13 +320,16 @@ describe('DiscoverPage', () => {
       await vi.advanceTimersByTimeAsync(300);
     });
     expect(screen.getByText('Facu')).toBeInTheDocument();
+    expect(screen.getByText('Estoy bien')).toBeInTheDocument();
 
-    resolveFirst(result([person({ id: 'old-id', username: 'fabi', displayName: 'Fabi', bio: null })]));
+    resolveFirst(result([person({ id: 'old-id', username: 'fabi', displayName: 'Fabi', bio: null, statusMood: 'DIFFICULT_DAY' })]));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(screen.queryByText('Fabi')).not.toBeInTheDocument();
+    expect(screen.queryByText('Día difícil')).not.toBeInTheDocument();
     expect(screen.getByText('Facu')).toBeInTheDocument();
+    expect(screen.getByText('Estoy bien')).toBeInTheDocument();
     vi.useRealTimers();
   });
 
@@ -231,7 +338,7 @@ describe('DiscoverPage', () => {
       .mockResolvedValueOnce(result([person()], { last: false, totalPages: 2, totalElements: 2 }))
       .mockResolvedValueOnce(result([
         person(),
-        person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null }),
+        person({ id: 'luz-id', username: 'luz', displayName: 'Luz', bio: null, statusMood: 'NEED_DISTRACTION' }),
       ], { number: 1, last: true, totalPages: 2, totalElements: 2 }));
     const user = userEvent.setup();
     renderDiscover();
@@ -239,6 +346,7 @@ describe('DiscoverPage', () => {
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cargar más' }));
     expect(await screen.findByText('Luz')).toBeInTheDocument();
+    expect(screen.getByText('Necesito distraerme')).toBeInTheDocument();
     expect(screen.getAllByText('Ana')).toHaveLength(1);
     expect(api.discoverUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, size: 20 }));
     expect(screen.queryByRole('button', { name: 'Cargar más' })).not.toBeInTheDocument();

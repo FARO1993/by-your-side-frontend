@@ -143,6 +143,7 @@ export interface DiscoverUser {
   profileVisibility: ProfileVisibility;
   followState: DiscoverFollowState;
   available: boolean;
+  statusMood: StatusMood | null;
 }
 
 export type NotificationType =

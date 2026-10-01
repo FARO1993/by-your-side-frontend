@@ -6,8 +6,9 @@ import { DISCOVER_PAGE_SIZE, discoverUsers } from '../api/users';
 import type { DiscoverUser } from '../api/types';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
-import { Button, EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
+import { Badge, Button, EmptyState, ErrorState, SectionTitle } from '../components/byourside/ui';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const LOAD_ERROR = 'No se pudo cargar la lista de personas.';
@@ -159,6 +160,7 @@ export default function DiscoverPage() {
 function PersonRow({ person }: { person: DiscoverUser }) {
   const displayName = person.displayName?.trim() || person.username;
   const bio = person.bio?.trim() ? person.bio.trim() : null;
+  const mood = person.statusMood ? STATUS_MOOD_UI[person.statusMood] : null;
 
   return (
     <li className="rounded-2xl bg-card p-4 shadow-soft [&_button]:w-full md:[&_button]:w-auto">
@@ -172,6 +174,11 @@ function PersonRow({ person }: { person: DiscoverUser }) {
             <span className="min-w-0">
               <span className="block truncate font-medium text-foreground">{displayName}</span>
               <span className="block truncate text-sm text-muted-foreground">@{person.username}</span>
+              {mood ? (
+                <Badge tone={moodToneToBadgeTone(mood.tone)} className="mt-1 max-w-full whitespace-normal">
+                  {mood.label}
+                </Badge>
+              ) : null}
               {person.available ? <span className="mt-1 block text-xs text-listening-strong">Disponible ahora</span> : null}
             </span>
           </span>
