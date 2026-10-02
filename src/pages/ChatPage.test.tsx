@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
@@ -130,6 +130,7 @@ describe('chat safety', () => {
 
     expect(await screen.findByText('Bloqueaste a Lucía. No pueden enviarse mensajes nuevos.')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Escribí un mensaje…')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Invitar a Lucía a jugar' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Desbloquear' }));
     expect(api.unblockUser).toHaveBeenCalledWith('u2');
@@ -165,9 +166,14 @@ describe('leaving a conversation', () => {
           <Route path="/messages/:conversationId" element={<ChatPage />} />
           <Route path="/messages" element={<p>Lista de conversaciones</p>} />
           <Route path="/help" element={<p>Página de ayuda</p>} />
+          <Route path="/distraerme/invitar" element={<InviteProbe />} />
         </Routes>
       </MemoryRouter>,
     );
+  }
+
+  function InviteProbe() {
+    return <p>Invitar a jugar {useLocation().search}</p>;
   }
 
   beforeEach(() => {
@@ -175,6 +181,13 @@ describe('leaving a conversation', () => {
     api.getMessages.mockReset().mockResolvedValue({ content: [] });
     api.getPublicProfile.mockReset().mockResolvedValue({ blockedByCurrentUser: false, mutedByCurrentUser: false });
     api.sendMessage.mockReset();
+  });
+
+  it('offers to play something together with the other person', async () => {
+    const user = userEvent.setup();
+    renderChat();
+    await user.click(await screen.findByRole('button', { name: 'Invitar a Lucía a jugar' }));
+    expect(screen.getByText('Invitar a jugar ?con=u2')).toBeInTheDocument();
   });
 
   it('sends the chosen goodbye and goes back to the list', async () => {

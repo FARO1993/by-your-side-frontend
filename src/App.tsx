@@ -29,6 +29,8 @@ import ReboundGamePage from './pages/distraerme/ReboundGamePage';
 import GardenGamePage from './pages/distraerme/GardenGamePage';
 import PuzzleGamePage from './pages/distraerme/PuzzleGamePage';
 import LeavesGamePage from './pages/distraerme/LeavesGamePage';
+import GameInvitePage from './pages/distraerme/GameInvitePage';
+import GameRoomPage from './pages/distraerme/GameRoomPage';
 import NotificationsPage from './pages/NotificationsPage';
 
 const WelcomePreviewPage = import.meta.env.DEV
@@ -96,6 +98,8 @@ export default function App() {
             <Route path="/distraerme/jardin" element={<GardenGamePage />} />
             <Route path="/distraerme/puzzle" element={<PuzzleGamePage />} />
             <Route path="/distraerme/hojas" element={<LeavesGamePage />} />
+            <Route path="/distraerme/invitar" element={<GameInvitePage />} />
+            <Route path="/distraerme/sala/:roomId" element={<GameRoomPage />} />
             <Route path="/messages" element={<ConversationsPage />} />
             <Route path="/messages/:conversationId" element={<ChatPage />} />
             <Route path="/posts/:postId" element={<PostPage />} />
