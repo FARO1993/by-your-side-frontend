@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   acceptGameRoom: vi.fn(),
   declineGameRoom: vi.fn(),
   leaveGameRoom: vi.fn(),
+  getGameHistory: vi.fn(),
 }));
 const socket = vi.hoisted(() => ({ handler: null as null | ((message: GameRoomMessage) => void) }));
 const me = vi.hoisted(() => ({ id: 'host-id' }));
@@ -177,6 +178,57 @@ describe('GameRoomPage', () => {
     expect(screen.getByText('Soumia encajó una pieza. 2 de 9, juntos.')).toBeInTheDocument();
     expect(screen.getByTestId('puzzle-highlight')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /La está mirando Soumia/ })).not.toBeInTheDocument();
+  });
+
+  it('garden: picks up where they left it, both can tend it, and you see what the other did', async () => {
+    let seq = 0;
+    api.getGameRoom.mockResolvedValue(room({ game: 'GARDEN' }));
+    api.getGameHistory.mockResolvedValue([
+      { roomId: 'old', seq: 1, actorId: 'guest-id', type: 'PLANT', payload: { index: 0, species: 'girasol' }, createdAt: '2026-09-20T12:00:00Z' },
+    ]);
+    api.sendGameEvent.mockImplementation(async (_room: string, type: string, payload: unknown) => ({
+      roomId: 'room-1',
+      seq: ++seq,
+      actorId: 'host-id',
+      type,
+      payload,
+      createdAt: '',
+    }));
+    renderRoom();
+
+    expect(await screen.findByText('Jardín compartido')).toBeInTheDocument();
+    expect(screen.getByText(/Lo vienen cuidando juntos desde el 20 de septiembre/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cantero 1: Girasol, semilla. Regar' })).toBeInTheDocument();
+
+    // Riego el girasol de la otra vez y planto una lavanda.
+    fireEvent.click(screen.getByRole('button', { name: 'Cantero 1: Girasol, semilla. Regar' }));
+    expect(api.sendGameEvent).toHaveBeenCalledWith('room-1', 'WATER', { index: 0 });
+    expect(await screen.findByRole('button', { name: 'Cantero 1: Girasol, brote. Regar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Lavanda/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Cantero 2, vacío/ }));
+    expect(api.sendGameEvent).toHaveBeenCalledWith('room-1', 'PLANT', { index: 1, species: 'lavanda' });
+
+    // Soumia planta un tulipán.
+    act(() =>
+      socket.handler?.({
+        kind: 'EVENT',
+        room: null,
+        event: { roomId: 'room-1', seq: ++seq, actorId: 'guest-id', type: 'PLANT', payload: { index: 4, species: 'tulipan' }, createdAt: '' },
+      }),
+    );
+    expect(await screen.findByText('Soumia plantó un tulipán.', { selector: 'p[aria-hidden]' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Soumia plantó un tulipán.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Terminar por hoy' }));
+    expect(screen.getByText('Gracias por compartir este ratito 🌱')).toBeInTheDocument();
+  });
+
+  it('garden: offers to retry if the shared garden could not be loaded', async () => {
+    api.getGameRoom.mockResolvedValue(room({ game: 'GARDEN' }));
+    api.getGameHistory.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce([]);
+    renderRoom();
+    fireEvent.click(await screen.findByRole('button', { name: 'Probar de nuevo' }));
+    expect(await screen.findByText(/Es su primer rato en este jardín/)).toBeInTheDocument();
   });
 
   it('tells you gently when the other person leaves', async () => {

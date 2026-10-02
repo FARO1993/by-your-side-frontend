@@ -9,3 +9,8 @@ export const SPECIES_META: Record<Species, { label: string; petal: string; cente
 };
 
 export const STAGE_LABEL = ['semilla', 'brote', 'capullo', 'en flor'] as const;
+
+/** "un girasol", "una margarita". */
+export function speciesArticle(species: Species): 'un' | 'una' {
+  return species === 'tulipan' || species === 'girasol' ? 'un' : 'una';
+}

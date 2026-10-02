@@ -51,7 +51,7 @@ describe('GameInvitePage', () => {
     expect(screen.getAllByText('Lu')).toHaveLength(1);
     expect(screen.getByRole('button', { name: /^Memoria/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /^Puzzle/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /^Jardín/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Jardín/ })).toBeEnabled();
     expect(mocks.getFollowing).toHaveBeenCalledWith('me');
   });
 
