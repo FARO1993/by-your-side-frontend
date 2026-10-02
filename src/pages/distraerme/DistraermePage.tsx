@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Blocks, CircleDot, Gamepad2, Heart, LayoutGrid, Sprout, UserRound, Users, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Blocks, CircleDot, Gamepad2, Heart, LayoutGrid, Puzzle, Sprout, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { Card } from '../../components/byourside/ui';
 import { cn } from '../../lib/cn';
 
@@ -18,6 +18,13 @@ const GAMES: GameEntry[] = [
     description: 'Plantar, regar y ver florecer. Nada se marchita.',
     icon: Sprout,
     path: '/distraerme/jardin',
+  },
+  {
+    id: 'puzzle',
+    title: 'Puzzle',
+    description: 'Armar un paisaje pieza por pieza, sin reloj.',
+    icon: Puzzle,
+    path: '/distraerme/puzzle',
   },
   {
     id: 'memoria',
