@@ -8,7 +8,7 @@ export const GAME_NAMES: Record<GameType, string> = {
 };
 
 /** Juegos que ya tienen versión de a dos en el frontend. */
-export const TOGETHER_GAMES: GameType[] = ['MEMORY'];
+export const TOGETHER_GAMES: GameType[] = ['MEMORY', 'PUZZLE'];
 
 export function personName(user: UserSummary): string {
   return user.displayName || user.username;

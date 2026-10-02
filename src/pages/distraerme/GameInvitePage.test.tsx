@@ -50,7 +50,8 @@ describe('GameInvitePage', () => {
     expect(await screen.findByText('Soumia')).toBeInTheDocument();
     expect(screen.getAllByText('Lu')).toHaveLength(1);
     expect(screen.getByRole('button', { name: /^Memoria/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /^Puzzle/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Puzzle/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Jardín/ })).toBeDisabled();
     expect(mocks.getFollowing).toHaveBeenCalledWith('me');
   });
 

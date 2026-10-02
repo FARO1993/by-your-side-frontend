@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameEvent, GameRoom, GameRoomMessage } from '../../api/gameRooms';
 import { initialTogether } from '../../lib/games/memoryTogether';
+import { puzzleForRound } from '../../lib/games/puzzleTogether';
 import GameRoomPage from './GameRoomPage';
 
 const api = vi.hoisted(() => ({
@@ -123,6 +124,59 @@ describe('GameRoomPage', () => {
     api.sendGameEvent.mockClear();
     fireEvent.click(screen.getByRole('button', { name: /^Carta 3/ }));
     expect(api.sendGameEvent).not.toHaveBeenCalled();
+  });
+
+  it('puzzle: either one picks the picture, both place pieces and see what the other is holding', async () => {
+    let seq = 0;
+    api.getGameRoom.mockResolvedValue(room({ game: 'PUZZLE' }));
+    api.sendGameEvent.mockImplementation(async (_room: string, type: string, payload: unknown) => ({
+      roomId: 'room-1',
+      seq: ++seq,
+      actorId: 'host-id',
+      type,
+      payload,
+      createdAt: '',
+    }));
+    renderRoom();
+
+    expect(await screen.findByText('¿Qué arman?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Noche de campo/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Armar este' }));
+    expect(api.sendGameEvent).toHaveBeenCalledWith('room-1', 'SETUP', { round: 1, scene: 'noche', count: 9 });
+    expect(await screen.findByText('0 de 9 piezas, juntos')).toBeInTheDocument();
+
+    // Soumia agarra una pieza: se ve en la bandeja.
+    const puzzle = puzzleForRound(SEED, 1, 9);
+    const held = puzzle.tray[2];
+    act(() =>
+      socket.handler?.({
+        kind: 'EVENT',
+        room: null,
+        event: { roomId: 'room-1', seq: ++seq, actorId: 'guest-id', type: 'HOLD', payload: { round: 1, pieceId: held }, createdAt: '' },
+      }),
+    );
+    expect(await screen.findByRole('button', { name: /La está mirando Soumia/ })).toBeInTheDocument();
+
+    // Yo coloco una pieza (tocar + lugar): aparece al instante y se manda.
+    const mine = puzzle.pieces[puzzle.tray[0]];
+    fireEvent.click(screen.getAllByRole('button', { name: /^Pieza \d/ })[0]);
+    expect(api.sendGameEvent).toHaveBeenCalledWith('room-1', 'HOLD', { round: 1, pieceId: mine.id });
+    fireEvent.click(screen.getByRole('button', { name: `Fila ${mine.row + 1}, columna ${mine.col + 1}` }));
+    expect(api.sendGameEvent).toHaveBeenCalledWith('room-1', 'PLACE', { round: 1, pieceId: mine.id });
+    expect(await screen.findByText('1 de 9 piezas, juntos')).toBeInTheDocument();
+
+    // Soumia coloca la que tenía en la mano.
+    act(() =>
+      socket.handler?.({
+        kind: 'EVENT',
+        room: null,
+        event: { roomId: 'room-1', seq: ++seq, actorId: 'guest-id', type: 'PLACE', payload: { round: 1, pieceId: held }, createdAt: '' },
+      }),
+    );
+    expect(await screen.findByText('2 de 9 piezas, juntos')).toBeInTheDocument();
+    expect(screen.getByText('Soumia encajó una pieza. 2 de 9, juntos.')).toBeInTheDocument();
+    expect(screen.getByTestId('puzzle-highlight')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /La está mirando Soumia/ })).not.toBeInTheDocument();
   });
 
   it('tells you gently when the other person leaves', async () => {
