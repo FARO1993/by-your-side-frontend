@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { MessageSquare } from 'lucide-react';
+import { EyeOff, MessageSquare } from 'lucide-react';
 import type { Post, PostResponseSummary, PostResponseType } from '../api/types';
 import { deletePostResponse, setPostResponse } from '../api/posts';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ import { PostResponseMenu } from './byourside/post-response-menu';
 export default function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [response, setResponse] = useState<PostResponseState>({
     presenceCount: post.presenceCount,
     listeningCount: post.listeningCount,
@@ -24,6 +25,8 @@ export default function PostCard({ post }: { post: Post }) {
   const [error, setError] = useState<string | null>(null);
   const isOwnPost = user?.id === post.author.id;
   const name = post.author.displayName || post.author.username;
+  // Advertencia de contenido: quien lee elige si abrirlo. El autor lo ve normal.
+  const hidden = Boolean(post.contentWarning) && !isOwnPost && !revealed;
 
   async function handleSelect(type: PostResponseType) {
     if (pending) return;
@@ -59,9 +62,42 @@ export default function PostCard({ post }: { post: Post }) {
         ) : null}
       </div>
 
-      <p className="mt-4 max-w-prose text-[0.975rem] leading-relaxed text-foreground/90 whitespace-pre-wrap">
-        {post.content}
-      </p>
+      {post.contentWarning && isOwnPost ? (
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+          <EyeOff className="size-3.5" aria-hidden="true" />
+          Marcado como sensible
+        </p>
+      ) : null}
+
+      {hidden ? (
+        <div className="relative mt-4 min-h-32 overflow-hidden rounded-xl">
+          {/* Texto difuminado solo como textura: oculto para lectores de pantalla y no seleccionable. */}
+          <p
+            aria-hidden="true"
+            inert
+            className="max-w-prose select-none text-[0.975rem] leading-relaxed whitespace-pre-wrap text-foreground/70 blur-[7px]"
+          >
+            {post.content.slice(0, 280)}
+          </p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-card/60 p-4 text-center">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <EyeOff className="size-4 text-muted-foreground" aria-hidden="true" />
+              Este post habla de algo sensible
+            </p>
+            <button
+              type="button"
+              onClick={() => setRevealed(true)}
+              className="min-h-9 rounded-full border border-border bg-card px-4 text-sm font-medium shadow-soft hover:bg-muted"
+            >
+              Leer igual
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 max-w-prose text-[0.975rem] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+          {post.content}
+        </p>
+      )}
 
       {isOwnPost ? null : (
         <PostResponseMenu value={response.currentUserResponseType} disabled={pending} onSelect={(type) => void handleSelect(type)} />

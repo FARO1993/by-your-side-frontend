@@ -221,3 +221,36 @@ describe('PostCard without responses', () => {
     expect(screen.queryByText(/Presencia|Escucha \d/)).not.toBeInTheDocument();
   });
 });
+
+describe('PostCard content warning', () => {
+  it('hides sensitive content from readers until they choose to read it', async () => {
+    auth.user = { id: 'me' };
+    const user = userEvent.setup();
+    renderCard(post({ contentWarning: true, content: 'Hoy fue un día muy oscuro.' }));
+
+    expect(screen.getByText('Este post habla de algo sensible')).toBeInTheDocument();
+    // El texto queda fuera del árbol accesible mientras está difuminado.
+    expect(screen.queryByText('Hoy fue un día muy oscuro.', { ignore: '[aria-hidden="true"] *, [aria-hidden="true"]' })).not.toBeInTheDocument();
+    expect(screen.getByText('Hoy fue un día muy oscuro.')).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Leer igual' }));
+    expect(screen.queryByText('Este post habla de algo sensible')).not.toBeInTheDocument();
+    expect(screen.getByText('Hoy fue un día muy oscuro.')).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('shows the author their own post normally, with a label', () => {
+    auth.user = { id: 'author' };
+    renderCard(post({ contentWarning: true }));
+    expect(screen.getByText('Marcado como sensible')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Leer igual' })).not.toBeInTheDocument();
+    auth.user = { id: 'me' };
+  });
+
+  it('treats a missing field (older backend) as no warning', () => {
+    auth.user = { id: 'me' };
+    const legacy = post();
+    delete (legacy as { contentWarning?: boolean }).contentWarning;
+    renderCard(legacy);
+    expect(screen.queryByText('Este post habla de algo sensible')).not.toBeInTheDocument();
+  });
+});

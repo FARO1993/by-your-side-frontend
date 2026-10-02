@@ -32,7 +32,7 @@ describe('Composer check-in', () => {
 
     await userEvent.type(screen.getByPlaceholderText('¿Cómo venís hoy? Acá te leemos sin apuro…'), 'Hoy vengo bien');
     await userEvent.click(screen.getByRole('button', { name: 'Compartir' }));
-    expect(onSubmit).toHaveBeenCalledWith('Hoy vengo bien');
+    expect(onSubmit).toHaveBeenCalledWith('Hoy vengo bien', { contentWarning: false });
   });
 });
 
@@ -68,5 +68,17 @@ describe('Composer drafts', () => {
     render(<Composer authorName="Ana" onSubmit={vi.fn()} draftKey={key} />);
     await userEvent.click(screen.getByRole('button', { name: 'Compartir' }));
     expect(localStorage.getItem(key)).toBeNull();
+  });
+});
+
+describe('Composer content warning', () => {
+  it('sends the sensitive flag and resets it after publishing', async () => {
+    const onSubmit = vi.fn();
+    render(<Composer authorName="Ana" onSubmit={onSubmit} />);
+    await userEvent.type(screen.getByPlaceholderText('¿Cómo venís hoy? Acá te leemos sin apuro…'), 'algo pesado');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Contenido sensible' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compartir' }));
+    expect(onSubmit).toHaveBeenCalledWith('algo pesado', { contentWarning: true });
+    expect(screen.getByRole('checkbox', { name: 'Contenido sensible' })).not.toBeChecked();
   });
 });
