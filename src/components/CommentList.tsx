@@ -39,7 +39,19 @@ export default function CommentList({ postId }: { postId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {loading ? <p className="text-sm text-muted-foreground">Cargando respuestas…</p> : null}
+      {loading ? (
+        <div role="status" aria-label="Cargando respuestas" className="space-y-3">
+          {[0, 1].map((index) => (
+            <div key={index} aria-hidden="true" className="flex gap-3">
+              <div className="size-9 shrink-0 rounded-full skeleton" />
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="h-3 w-1/4 rounded-full skeleton" />
+                <div className="h-3 w-3/4 rounded-full skeleton" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {comments.map((comment) => {
         const name = comment.author.displayName || comment.author.username;
         return (

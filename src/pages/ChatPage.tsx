@@ -9,13 +9,14 @@ import type { Conversation, Message } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { useChatNotifications } from '../context/ChatNotificationsContext';
 import { useDraft } from '../hooks/useDraft';
+import { useSocketStatus } from '../hooks/useSocketStatus';
 import { draftKey } from '../lib/drafts';
 import { timeAgo } from '../lib/timeAgo';
 import { cn } from '../lib/cn';
 import Avatar from '../components/Avatar';
 import { DraftNotice } from '../components/byourside/draft-notice';
 import { ConversationList, MessagesChrome } from '../components/byourside/messages-chrome';
-import { Button, Spinner } from '../components/byourside/ui';
+import { Button } from '../components/byourside/ui';
 import { ChatSafetyMenu, type ChatRelation } from '../components/safety/ChatSafetyMenu';
 import { CompanionCrisisGuide } from '../components/safety/CompanionCrisisGuide';
 import { CrisisNotice } from '../components/safety/CrisisNotice';
@@ -105,7 +106,7 @@ export default function ChatPage() {
 
     const unsubscribe = subscribeToUserQueue<Message>('/user/queue/messages', (message) => {
       if (message.conversationId === conversationId) {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => mergeMessages(prev, [message]));
       }
     });
     return unsubscribe;
@@ -115,6 +116,21 @@ export default function ChatPage() {
     if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
   }, [messages]);
 
+  // Al volver la conexión después de una caída, se traen los mensajes que
+  // pudieron llegar mientras tanto (el tiempo real no los reenvía).
+  const socketStatus = useSocketStatus();
+  const previousSocketStatus = useRef(socketStatus);
+  useEffect(() => {
+    const previous = previousSocketStatus.current;
+    previousSocketStatus.current = socketStatus;
+    if (previous !== 'reconnecting' || socketStatus !== 'connected' || !conversationId) return;
+    getMessages(conversationId)
+      .then((page) => setMessages((prev) => mergeMessages(prev, page.content)))
+      .catch(() => {
+        // Si falla, quedan los que ya había; el próximo mensaje en tiempo real llega igual.
+      });
+  }, [socketStatus, conversationId]);
+
   async function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
     if (!conversationId || !content.trim()) return;
@@ -123,7 +139,7 @@ export default function ChatPage() {
     setSendError(null);
     try {
       const message = await sendMessage(conversationId, trimmed);
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => mergeMessages(prev, [message]));
     } catch {
       setContent(trimmed);
       setSendError('No pudimos enviar el mensaje.');
@@ -215,13 +231,25 @@ export default function ChatPage() {
             />
           ) : null}
 
+          {socketStatus === 'reconnecting' ? (
+            <p
+              role="status"
+              className="flex items-center justify-center gap-2 border-b border-border/60 bg-muted/70 px-3 py-2 text-center text-xs text-muted-foreground"
+            >
+              <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-presence" aria-hidden="true" />
+              Se cortó la conexión. Reconectando… Podés seguir escribiendo: tus mensajes se envían igual.
+            </p>
+          ) : null}
           <div
             ref={scroller}
             className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-presence-soft/20 to-listening-soft/20 p-4"
           >
             {loading ? (
-              <div className="flex justify-center py-10">
-                <Spinner />
+              <div className="space-y-3 py-2">
+                <span className="sr-only">Cargando mensajes</span>
+                {['w-2/3', 'ml-auto w-1/2', 'w-3/5', 'ml-auto w-2/5'].map((width, index) => (
+                  <div key={index} aria-hidden="true" className={cn('h-12 rounded-2xl skeleton', width)} />
+                ))}
               </div>
             ) : (
               <>
@@ -235,7 +263,8 @@ export default function ChatPage() {
                   </Link>
                   .
                 </p>
-                <div className="space-y-3">
+                {/* role="log": los lectores de pantalla anuncian los mensajes nuevos que llegan. */}
+                <div role="log" aria-live="polite" aria-label={`Mensajes con ${name}`} className="space-y-3">
                   {messages.map((message) => {
                     const mine = message.sender.id === user?.id;
                     return (
@@ -248,6 +277,7 @@ export default function ChatPage() {
                               : 'rounded-bl-md bg-card text-foreground',
                           )}
                         >
+                          <span className="sr-only">{mine ? 'Vos' : name}: </span>
                           {message.content}
                           <time className={cn('mt-1 block text-[0.7rem]', mine ? 'text-presence-foreground/80' : 'text-muted-foreground')}>
                             {timeAgo(message.createdAt)}
@@ -327,4 +357,18 @@ export default function ChatPage() {
       </div>
     </MessagesChrome>
   );
+}
+
+/** Une mensajes sin duplicar (por id) y los deja en orden cronológico. */
+function mergeMessages(current: Message[], incoming: Message[]): Message[] {
+  const byId = new Map(current.map((message) => [message.id, message]));
+  let changed = false;
+  for (const message of incoming) {
+    if (!byId.has(message.id)) {
+      byId.set(message.id, message);
+      changed = true;
+    }
+  }
+  if (!changed) return current;
+  return [...byId.values()].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }

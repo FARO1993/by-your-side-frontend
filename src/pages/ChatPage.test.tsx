@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,8 +21,38 @@ vi.mock('../context/ChatNotificationsContext', () => ({
   useChatNotifications: () => ({ refreshUnreadCount: vi.fn() }),
 }));
 
+const socket = vi.hoisted(() => {
+  let status = 'connected';
+  const listeners = new Set<() => void>();
+  let onMessage: ((payload: unknown) => void) | null = null;
+  return {
+    get status() {
+      return status;
+    },
+    setStatus(next: string) {
+      status = next;
+      listeners.forEach((listener) => listener());
+    },
+    listeners,
+    push(payload: unknown) {
+      onMessage?.(payload);
+    },
+    setHandler(handler: ((payload: unknown) => void) | null) {
+      onMessage = handler;
+    },
+  };
+});
+
 vi.mock('../api/socket', () => ({
-  subscribeToUserQueue: () => () => undefined,
+  subscribeToUserQueue: (_destination: string, handler: (payload: unknown) => void) => {
+    socket.setHandler(handler);
+    return () => socket.setHandler(null);
+  },
+  getSocketStatus: () => socket.status,
+  subscribeSocketStatus: (listener: () => void) => {
+    socket.listeners.add(listener);
+    return () => socket.listeners.delete(listener);
+  },
 }));
 
 vi.mock('../api/chat', () => ({
@@ -258,5 +288,70 @@ describe('crisis support in chat', () => {
     renderChat();
     await user.click(await screen.findByRole('button', { name: 'Entendido' }));
     expect(screen.queryByRole('region', { name: /Cómo acompañar/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('realtime connection', () => {
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
+  const conversation = { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 };
+  const msg = (id: string, content: string, minute: number) => ({
+    id,
+    conversationId: 'chat-1',
+    sender: lu,
+    content,
+    read: true,
+    createdAt: `2026-10-02T12:${String(minute).padStart(2, '0')}:00Z`,
+  });
+
+  function renderChat() {
+    return render(
+      <MemoryRouter initialEntries={['/messages/chat-1']}>
+        <Routes>
+          <Route path="/messages/:conversationId" element={<ChatPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    socket.setStatus('connected');
+    api.getConversations.mockReset().mockResolvedValue([conversation]);
+    api.getPublicProfile.mockReset().mockResolvedValue({ blockedByCurrentUser: false, mutedByCurrentUser: false });
+  });
+
+  it('warns while reconnecting and fetches the messages missed during the drop', async () => {
+    api.getMessages
+      .mockReset()
+      .mockResolvedValueOnce({ content: [msg('m1', 'hola', 1)] })
+      .mockResolvedValueOnce({ content: [msg('m1', 'hola', 1), msg('m2', 'llegó mientras estabas sin conexión', 2)] });
+    renderChat();
+    expect(await screen.findByText('hola')).toBeInTheDocument();
+
+    act(() => socket.setStatus('reconnecting'));
+    expect(screen.getByText(/Reconectando…/)).toHaveAttribute('role', 'status');
+
+    act(() => socket.setStatus('connected'));
+    expect(await screen.findByText('llegó mientras estabas sin conexión')).toBeInTheDocument();
+    expect(screen.queryByText(/Reconectando/)).not.toBeInTheDocument();
+    expect(screen.getAllByText('hola')).toHaveLength(1);
+  });
+
+  it('announces incoming messages in an accessible log, without duplicates', async () => {
+    api.getMessages.mockReset().mockResolvedValue({ content: [msg('m1', 'hola', 1)] });
+    renderChat();
+    const log = await screen.findByRole('log', { name: 'Mensajes con Lucía' });
+    expect(log).toHaveTextContent('Lucía: hola');
+
+    act(() => socket.push(msg('m2', '¿cómo seguís?', 2)));
+    act(() => socket.push(msg('m2', '¿cómo seguís?', 2)));
+    expect(screen.getAllByText('¿cómo seguís?')).toHaveLength(1);
+  });
+
+  it('does not show the warning on the first connection', async () => {
+    api.getMessages.mockReset().mockResolvedValue({ content: [] });
+    socket.setStatus('connecting');
+    renderChat();
+    await screen.findByRole('log');
+    expect(screen.queryByText(/Reconectando/)).not.toBeInTheDocument();
   });
 });
