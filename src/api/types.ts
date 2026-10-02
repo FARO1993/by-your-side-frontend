@@ -241,3 +241,10 @@ export interface CreateReportRequest {
   reason: ReportReason;
   description?: string;
 }
+
+// GET /api/statuses/mine/history — historial de ánimo propio (privado)
+export interface MoodHistoryEntry {
+  id: string;
+  mood: StatusMood;
+  createdAt: string;
+}

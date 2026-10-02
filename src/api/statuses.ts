@@ -1,6 +1,6 @@
 import axios from 'axios';
 import apiClient from './client';
-import type { Status, StatusMood, StatusReactionType } from './types';
+import type { MoodHistoryEntry, Status, StatusMood, StatusReactionType } from './types';
 
 export type UserStatusView = { kind: 'active'; status: Status } | { kind: 'none' } | { kind: 'hidden' };
 
@@ -37,4 +37,17 @@ export async function reactToStatus(statusId: string, type: StatusReactionType):
 export async function removeStatusReaction(statusId: string): Promise<Status> {
   const response = await apiClient.delete<Status>(`/api/statuses/${statusId}/react`);
   return response.data;
+}
+/**
+ * Historial de ánimo propio (privado). null si el backend todavía no tiene el
+ * endpoint (404): la vista se oculta sin mostrar error.
+ */
+export async function getMyMoodHistory(days = 30): Promise<MoodHistoryEntry[] | null> {
+  try {
+    const response = await apiClient.get<MoodHistoryEntry[]>('/api/statuses/mine/history', { params: { days } });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
 }
