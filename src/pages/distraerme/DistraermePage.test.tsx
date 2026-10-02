@@ -29,7 +29,7 @@ describe('DistraermePage', () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole('button', { name: /Jugar solo\/a/ }));
-    expect(screen.getByRole('button', { name: /Bloques/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Bloques/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Rebote/ })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /Memoria/ }));
     expect(screen.getByText('Juego de memoria')).toBeInTheDocument();

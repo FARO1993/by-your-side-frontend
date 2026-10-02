@@ -24,7 +24,7 @@ const GAMES: GameEntry[] = [
     title: 'Bloques',
     description: 'Encajar piezas, a tu ritmo.',
     icon: Blocks,
-    path: null,
+    path: '/distraerme/bloques',
   },
   {
     id: 'rebote',
