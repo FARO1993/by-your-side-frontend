@@ -31,6 +31,7 @@ describe('DistraermePage', () => {
     await user.click(screen.getByRole('button', { name: /Jugar solo\/a/ }));
     expect(screen.getByRole('button', { name: /Jardín/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Puzzle/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Hojas en el río/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Bloques/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Rebote/ })).toBeEnabled();
     expect(screen.queryByText('Muy pronto')).not.toBeInTheDocument();
