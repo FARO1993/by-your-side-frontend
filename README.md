@@ -1,3 +1,24 @@
+# ByYourSide — frontend
+
+> You don't have to face it alone.
+
+## Desarrollo local
+
+```bash
+npm install
+cp .env.example .env   # URLs del backend (por defecto, localhost:8080)
+npm run dev
+```
+
+- `npm test` — tests unitarios (Vitest)
+- `npm run test:e2e` — tests e2e (Playwright)
+- `npm run lint` / `npm run build`
+
+El archivo `.env` es local y no se sube al repo. En Vercel, `VITE_API_BASE_URL` y
+`VITE_WS_BASE_URL` se configuran en *Project Settings → Environment Variables*.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

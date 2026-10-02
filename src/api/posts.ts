@@ -1,3 +1,4 @@
+import axios from 'axios';
 import apiClient from './client';
 import type { Page, Post, CreatePostRequest, PostResponseSummary, PostResponseType } from './types';
 
@@ -26,4 +27,17 @@ export async function deletePostResponse(postId: string): Promise<PostResponseSu
 export async function getPost(postId: string): Promise<Post> {
   const response = await apiClient.get<Post>(`/api/posts/${postId}`);
   return response.data;
+}
+/**
+ * Espacio anónimo (backend V20). null si el backend todavía no tiene el
+ * endpoint (404): la página muestra que no está disponible.
+ */
+export async function getAnonymousFeed(page = 0, size = 20): Promise<Page<Post> | null> {
+  try {
+    const response = await apiClient.get<Page<Post>>('/api/posts/anonymous', { params: { page, size } });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
 }

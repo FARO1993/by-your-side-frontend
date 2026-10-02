@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Globe, Lock, Users } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
+import { ArrowLeft, Globe, Lock, Users, VenetianMask } from 'lucide-react';
 import { createPost } from '../api/posts';
 import { setStatus } from '../api/statuses';
 import type { CreatePostRequest, StatusMood } from '../api/types';
@@ -10,6 +11,7 @@ import { friendlyError } from '../lib/friendlyError';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../lib/visual';
 import Avatar from '../components/Avatar';
 import { DraftNotice } from '../components/byourside/draft-notice';
+import { SensitiveToggle } from '../components/byourside/sensitive-toggle';
 import { CrisisNotice } from '../components/safety/CrisisNotice';
 import { useDraft } from '../hooks/useDraft';
 import { draftKey } from '../lib/drafts';
@@ -29,6 +31,9 @@ export default function CreatePostPage() {
   const { text: content, setText: setContent, discard, restored } = useDraft(draftKey(user?.id, 'create-post'));
   const [mood, setMood] = useState<StatusMood | null>(null);
   const [visibility, setVisibility] = useState<CreatePostRequest['visibility']>('PUBLIC');
+  const [contentWarning, setContentWarning] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [anonymous, setAnonymous] = useState(searchParams.get('anonimo') === '1');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const remaining = 2000 - content.length;
@@ -40,12 +45,23 @@ export default function CreatePostPage() {
     setSubmitting(true);
     setError(null);
     try {
-      if (mood) await setStatus(mood);
-      await createPost({ content: content.trim(), visibility });
+      // En anónimo no se publica el ánimo: es un estado CON nombre, y hacerlo
+      // al mismo tiempo permitiría asociarlo con el post anónimo.
+      if (mood && !anonymous) await setStatus(mood);
+      await createPost({
+        content: content.trim(),
+        visibility: anonymous ? 'PUBLIC' : visibility,
+        contentWarning,
+        anonymous,
+      });
       discard();
-      navigate('/feed');
+      navigate(anonymous ? '/anonimo' : '/feed');
     } catch (err) {
-      setError(friendlyError(err, 'No pudimos compartirlo. Tu texto sigue acá, podés intentar de nuevo.'));
+      if (anonymous && axios.isAxiosError(err) && err.response?.status === 429) {
+        setError('Ya compartiste 3 veces en anónimo en las últimas 24 horas. Podés publicarlo con tu nombre o volver más tarde: tu texto sigue acá.');
+      } else {
+        setError(friendlyError(err, 'No pudimos compartirlo. Tu texto sigue acá, podés intentar de nuevo.'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -67,13 +83,51 @@ export default function CreatePostPage() {
 
       <Card className="p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="flex items-center gap-3">
-            <Avatar avatarUrl={user?.avatarUrl} name={name} size="md" />
-            <div>
-              <p className="font-medium">{name}</p>
-              <p className="text-sm text-muted-foreground">Acá te leemos sin apuro.</p>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {anonymous ? (
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                >
+                  <VenetianMask className="size-5" />
+                </span>
+                <div>
+                  <p className="font-medium">Alguien de la comunidad</p>
+                  <p className="text-sm text-muted-foreground">Así te van a ver los demás.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Avatar avatarUrl={user?.avatarUrl} name={name} size="md" />
+                <div>
+                  <p className="font-medium">{name}</p>
+                  <p className="text-sm text-muted-foreground">Acá te leemos sin apuro.</p>
+                </div>
+              </div>
+            )}
+            <label
+              className={cn(
+                'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm transition-colors',
+                anonymous ? 'border-foreground/30 bg-muted text-foreground' : 'border-border bg-background text-foreground/80',
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={anonymous}
+                onChange={(event) => setAnonymous(event.target.checked)}
+                className="size-4 accent-[var(--foreground)]"
+              />
+              <VenetianMask className="size-4" aria-hidden="true" />
+              Publicar en anónimo
+            </label>
           </div>
+          {anonymous ? (
+            <p className="rounded-2xl bg-muted/60 p-3 text-sm text-muted-foreground">
+              Va al <strong className="font-medium text-foreground">espacio anónimo</strong>, sin tu nombre ni tu foto, y
+              no aparece en tu perfil. Se responde con Presencia o Escucha. Podés compartir hasta 3 veces por día así.
+            </p>
+          ) : null}
 
           <textarea
             autoFocus
@@ -92,47 +146,54 @@ export default function CreatePostPage() {
             </p>
           </div>
 
-          <div>
-            <p className="mb-2 text-sm font-medium">¿Cómo estás hoy? (opcional)</p>
-            <div className="flex flex-wrap gap-2">
-              {moods.map(([value, meta]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setMood(value)}
-                  className={cn(
-                    'min-h-9 rounded-full border border-border bg-background px-3 text-sm',
-                    mood === value ? MOOD_TONE_STYLES[meta.tone].chip : 'text-foreground/80',
-                  )}
-                >
-                  {meta.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* En anónimo: sin ánimo (es un estado con nombre) y siempre público. */}
+          {anonymous ? null : (
+            <>
+              <div>
+                <p className="mb-2 text-sm font-medium">¿Cómo estás hoy? (opcional)</p>
+                <div className="flex flex-wrap gap-2">
+                  {moods.map(([value, meta]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setMood(value)}
+                      className={cn(
+                        'min-h-9 rounded-full border border-border bg-background px-3 text-sm',
+                        mood === value ? MOOD_TONE_STYLES[meta.tone].chip : 'text-foreground/80',
+                      )}
+                    >
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div>
-            <p className="mb-2 text-sm font-medium">¿Quién puede verlo?</p>
-            <div className="flex flex-wrap gap-2">
-              {audiences.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={visibility === value}
-                  onClick={() => setVisibility(value)}
-                  className={cn(
-                    'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm',
-                    visibility === value
-                      ? 'bg-presence-soft text-presence-strong'
-                      : 'bg-background text-foreground/80',
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+              <div>
+                <p className="mb-2 text-sm font-medium">¿Quién puede verlo?</p>
+                <div className="flex flex-wrap gap-2">
+                  {audiences.map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={visibility === value}
+                      onClick={() => setVisibility(value)}
+                      className={cn(
+                        'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm',
+                        visibility === value
+                          ? 'bg-presence-soft text-presence-strong'
+                          : 'bg-background text-foreground/80',
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <SensitiveToggle checked={contentWarning} onChange={setContentWarning} text={content} />
 
           {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
 

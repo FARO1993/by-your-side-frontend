@@ -26,6 +26,10 @@ function pathFromRoute(route: AppShellRoute, userId?: string): string {
       return '/create';
     case 'notifications':
       return '/notifications';
+    case 'anonymous':
+      return '/anonimo';
+    case 'distraerme':
+      return '/distraerme';
     case 'feed':
     case 'post':
       return '/feed';
@@ -43,13 +47,15 @@ function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/help') || pathname.startsWith('/normas')) return 'help';
   if (pathname.startsWith('/create')) return 'create';
   if (pathname.startsWith('/notifications')) return 'notifications';
+  if (pathname.startsWith('/anonimo')) return 'anonymous';
+  if (pathname.startsWith('/distraerme')) return 'distraerme';
   if (pathname.startsWith('/login')) return 'login';
   if (pathname.startsWith('/register')) return 'register';
   return 'feed';
 }
 
 function widthFromPath(pathname: string): AppShellWidth {
-  if (pathname.startsWith('/profile') || pathname.startsWith('/discover') || pathname.startsWith('/companion') || pathname.startsWith('/help') || pathname.startsWith('/normas')) {
+  if (pathname.startsWith('/profile') || pathname.startsWith('/discover') || pathname.startsWith('/companion') || pathname.startsWith('/help') || pathname.startsWith('/normas') || pathname.startsWith('/distraerme')) {
     return '2xl';
   }
   return 'xl';

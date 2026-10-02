@@ -53,6 +53,8 @@ vi.mock('../api/users', () => ({
 
 vi.mock('../api/statuses', () => ({
   getUserStatus: api.getUserStatus,
+  // Historial de ánimo propio: en estos tests no importa; null = endpoint ausente.
+  getMyMoodHistory: () => Promise.resolve(null),
 }));
 
 vi.mock('../api/chat', () => ({

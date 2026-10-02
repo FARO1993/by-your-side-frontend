@@ -30,6 +30,7 @@ export function ReportDialog({
   onClose,
   onBlock,
   initialReason = null,
+  title,
 }: {
   targetType: ReportTargetType;
   targetId: string;
@@ -39,6 +40,8 @@ export function ReportDialog({
   onBlock?: () => void;
   /** Motivo preseleccionado (se puede cambiar). */
   initialReason?: ReportReason | null;
+  /** Título del diálogo (por defecto "Reportar a {name}"). */
+  title?: string;
 }) {
   const [reason, setReason] = useState<ReportReason | null>(initialReason);
   const [description, setDescription] = useState('');
@@ -87,7 +90,7 @@ export function ReportDialog({
 
   return (
     <Dialog
-      title={`Reportar a ${name}`}
+      title={title ?? `Reportar a ${name}`}
       description="Contanos qué pasa. Lo revisa el equipo de moderación y la otra persona no recibe ningún aviso."
       onClose={onClose}
     >

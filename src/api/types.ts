@@ -59,7 +59,8 @@ export type PostResponseType =
 
 export interface Post {
   id: string;
-  author: UserSummary;
+  /** null en un post anónimo de otra persona (backend V20). */
+  author: UserSummary | null;
   content: string;
   visibility: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
   createdAt: string;
@@ -68,6 +69,10 @@ export interface Post {
   presenceCount: number;
   listeningCount: number;
   currentUserResponseType: PostResponseType | null;
+  /** Advertencia de contenido (backend V19). Opcional: un backend anterior no lo envía. */
+  contentWarning?: boolean;
+  /** Post anónimo (backend V20). Opcional: un backend anterior no lo envía. */
+  anonymous?: boolean;
 }
 
 export interface PostResponseSummary {
@@ -90,6 +95,8 @@ export interface Page<T> {
 export interface CreatePostRequest {
   content: string;
   visibility?: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
+  contentWarning?: boolean;
+  anonymous?: boolean;
 }
 
 export interface Comment {
@@ -237,4 +244,11 @@ export interface CreateReportRequest {
   targetId: string;
   reason: ReportReason;
   description?: string;
+}
+
+// GET /api/statuses/mine/history — historial de ánimo propio (privado)
+export interface MoodHistoryEntry {
+  id: string;
+  mood: StatusMood;
+  createdAt: string;
 }

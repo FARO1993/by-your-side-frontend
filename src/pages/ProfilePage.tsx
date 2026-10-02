@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import FollowButton from '../components/FollowButton';
 import OwnRelations from '../components/OwnRelations';
+import { MoodHistoryCard } from '../components/MoodHistoryCard';
 import ProfileSafetyActions from '../components/ProfileSafetyActions';
 import PostCard from '../components/PostCard';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
@@ -463,6 +464,8 @@ export default function ProfilePage() {
       </Card>
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+
+      {isOwn ? <MoodHistoryCard /> : null}
 
       {isOwn ? <OwnRelations userId={profile.id} onChanged={() => void reloadProfile({ posts: false })} /> : null}
 

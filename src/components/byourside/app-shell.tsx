@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Plus,
   User,
+  VenetianMask,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import Avatar from '../Avatar';
@@ -24,6 +25,8 @@ export type AppShellRoute =
   | 'messages'
   | 'companion'
   | 'help'
+  | 'anonymous'
+  | 'distraerme'
   | 'login'
   | 'register'
   | 'post';
@@ -58,6 +61,7 @@ const widthClass: Record<AppShellWidth, string> = {
 const primaryNav = [
   { id: 'feed' as const, label: 'Inicio', icon: Home },
   { id: 'discover' as const, label: 'Descubrir', icon: Compass },
+  { id: 'anonymous' as const, label: 'Anónimo', icon: VenetianMask },
   { id: 'notifications' as const, label: 'Novedades', icon: Bell },
   { id: 'profile' as const, label: 'Perfil', icon: User },
 ];
