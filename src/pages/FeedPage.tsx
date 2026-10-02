@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, RefreshCw, VenetianMask } from 'lucide-react';
+import { ChevronRight, Gamepad2, RefreshCw, VenetianMask } from 'lucide-react';
 import { setNeed, setOffering, cancelNeed, cancelOffering, getMyNeed, getMyOffering } from '../api/companion';
 import { createPost, getFeed } from '../api/posts';
+import { cn } from '../lib/cn';
 import { getStatusFeed, setStatus } from '../api/statuses';
 import type { CompanionNeed, CompanionOffering, NeedType, OfferingType, Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +25,8 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
+  // Si eligió "Necesito distraerme", se le ofrece Distraerme ahí mismo.
+  const [lastMood, setLastMood] = useState<StatusMood | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeNeed, setActiveNeed] = useState<CompanionNeed | null>(null);
@@ -88,6 +91,7 @@ export default function FeedPage() {
   }
 
   async function handleMood(mood: StatusMood) {
+    setLastMood(mood);
     const status = await setStatus(mood);
     setStatuses((prev) => [status, ...prev.filter((item) => item.user.id !== status.user.id)]);
   }
@@ -189,6 +193,37 @@ export default function FeedPage() {
           draftKey={draftKey(user.id, 'feed-composer')}
         />
       ) : null}
+
+      {lastMood === 'NEED_DISTRACTION' ? (
+        <Link
+          to="/distraerme"
+          className="flex items-center gap-3 rounded-2xl bg-listening-soft px-4 py-3 text-sm animate-soft-rise"
+        >
+          <Gamepad2 className="size-5 shrink-0 text-listening-strong" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium text-foreground">¿Querés distraerte un rato?</span>
+            <span className="block text-xs text-muted-foreground">Juegos tranquilos, sin apuro y sin puntajes.</span>
+          </span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+        </Link>
+      ) : null}
+
+      <Link
+        to="/distraerme"
+        className={cn(
+          'flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm shadow-soft',
+          lastMood === 'NEED_DISTRACTION' && 'hidden',
+        )}
+      >
+        <span className="flex size-9 items-center justify-center rounded-full bg-listening-soft text-listening-strong" aria-hidden="true">
+          <Gamepad2 className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium text-foreground">Distraerme</span>
+          <span className="block text-xs text-muted-foreground">Está bien desconectar un rato</span>
+        </span>
+        <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+      </Link>
 
       {/* En mobile la barra inferior no tiene lugar: acceso al espacio anónimo desde acá. */}
       <Link

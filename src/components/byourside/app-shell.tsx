@@ -26,6 +26,7 @@ export type AppShellRoute =
   | 'companion'
   | 'help'
   | 'anonymous'
+  | 'distraerme'
   | 'login'
   | 'register'
   | 'post';

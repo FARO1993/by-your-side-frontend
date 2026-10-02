@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Ear, Heart, ShieldCheck } from 'lucide-react';
 import { cancelNeed, cancelOffering, getMyNeed, getMyOffering, listCompatibleOfferings, setNeed, setOffering } from '../api/companion';
 import { getOrCreateConversation } from '../api/chat';
@@ -180,6 +180,13 @@ export default function CompanionModePage() {
                 {NEED_LABEL[need.type]}
                 {needUntil ? ` · hasta ${needUntil}` : ''}
               </p>
+              {need.type === 'DISTRACTION' ? (
+                <p className="mt-2 text-sm">
+                  <Link to="/distraerme" className="font-medium text-listening-strong underline-offset-2 hover:underline">
+                    Mientras tanto, jugar algo tranquilo
+                  </Link>
+                </p>
+              ) : null}
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Button size="sm" variant="outline" onClick={() => setEditingNeed(true)}>
                   Cambiar
