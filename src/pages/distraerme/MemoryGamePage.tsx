@@ -1,19 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Cloud,
-  Feather,
-  Flower2,
-  Leaf,
-  Moon,
-  Mountain,
-  Sprout,
-  Star,
-  Sun,
-  Waves,
-  type LucideIcon,
-} from 'lucide-react';
 import { GameShell } from '../../components/games/GameShell';
+import { MEMORY_SYMBOLS as SYMBOLS, MEMORY_SYMBOL_KEYS, MISMATCH_DELAY_MS } from '../../lib/games/memorySymbols';
 import { Button, Card, PresenceGlyph } from '../../components/byourside/ui';
 import { cn } from '../../lib/cn';
 import {
@@ -26,29 +14,10 @@ import {
   type MemoryState,
 } from '../../lib/games/memory';
 
-const SYMBOLS: Record<string, { label: string; icon: LucideIcon; tone: 'presence' | 'listening' }> = {
-  luna: { label: 'Luna', icon: Moon, tone: 'listening' },
-  sol: { label: 'Sol', icon: Sun, tone: 'presence' },
-  hoja: { label: 'Hoja', icon: Leaf, tone: 'listening' },
-  nube: { label: 'Nube', icon: Cloud, tone: 'listening' },
-  olas: { label: 'Olas', icon: Waves, tone: 'listening' },
-  estrella: { label: 'Estrella', icon: Star, tone: 'presence' },
-  flor: { label: 'Flor', icon: Flower2, tone: 'presence' },
-  pluma: { label: 'Pluma', icon: Feather, tone: 'presence' },
-  montana: { label: 'Montaña', icon: Mountain, tone: 'listening' },
-  brote: { label: 'Brote', icon: Sprout, tone: 'presence' },
-};
-
-/** Orden de símbolos con el que se arma el mazo (exportado para tests deterministas). */
-export const MEMORY_SYMBOL_KEYS = Object.keys(SYMBOLS);
-
 const SIZES = [
   { pairs: 6, label: '6 parejas' },
   { pairs: 8, label: '8 parejas' },
 ] as const;
-
-/** Tiempo que quedan a la vista dos cartas que no son pareja. */
-export const MISMATCH_DELAY_MS = 1000;
 
 export default function MemoryGamePage() {
   const navigate = useNavigate();

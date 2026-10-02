@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../lib/games/memory';
-import MemoryGamePage, { MEMORY_SYMBOL_KEYS, MISMATCH_DELAY_MS } from './MemoryGamePage';
+import { MEMORY_SYMBOL_KEYS, MISMATCH_DELAY_MS } from '../../lib/games/memorySymbols';
+import MemoryGamePage from './MemoryGamePage';
 
 // Mazo determinista: con Math.random fijo, la página y el test arman el mismo mazo.
 function expectedDeck(pairs = 6) {
