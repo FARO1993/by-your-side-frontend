@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { EyeOff, MessageSquare } from 'lucide-react';
+import { EyeOff, Flag, MessageSquare, VenetianMask } from 'lucide-react';
 import type { Post, PostResponseSummary, PostResponseType } from '../api/types';
 import { deletePostResponse, setPostResponse } from '../api/posts';
 import { useAuth } from '../context/AuthContext';
@@ -11,11 +11,13 @@ import Avatar from './Avatar';
 import CommentList from './CommentList';
 import FollowButton from './FollowButton';
 import { PostResponseMenu } from './byourside/post-response-menu';
+import { ReportDialog } from './safety/ReportDialog';
 
 export default function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [response, setResponse] = useState<PostResponseState>({
     presenceCount: post.presenceCount,
     listeningCount: post.listeningCount,
@@ -23,8 +25,11 @@ export default function PostCard({ post }: { post: Post }) {
   });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isOwnPost = user?.id === post.author.id;
-  const name = post.author.displayName || post.author.username;
+  const author = post.author;
+  const isOwnPost = Boolean(author && user?.id === author.id);
+  // Anónimo de otra persona: el backend no envía el autor (author = null).
+  const anonymousForMe = Boolean(post.anonymous) && !isOwnPost;
+  const name = author ? author.displayName || author.username : 'Anónimo';
   // Advertencia de contenido: quien lee elige si abrirlo. El autor lo ve normal.
   const hidden = Boolean(post.contentWarning) && !isOwnPost && !revealed;
 
@@ -50,17 +55,59 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <article className="animate-soft-rise overflow-hidden rounded-2xl bg-card p-5 shadow-soft transition-shadow duration-300 hover:shadow-lift sm:p-6">
       <div className="flex items-start justify-between gap-3">
-        <Link to={`/profile/${post.author.id}`} className="flex min-w-0 items-center gap-3">
-          <Avatar avatarUrl={post.author.avatarUrl} name={name} size="md" />
-          <div className="min-w-0">
-            <p className="truncate font-serif text-base font-semibold text-foreground">{name}</p>
-            <time className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</time>
+        {author && !anonymousForMe ? (
+          <Link to={`/profile/${author.id}`} className="flex min-w-0 items-center gap-3">
+            <Avatar avatarUrl={author.avatarUrl} name={name} size="md" />
+            <div className="min-w-0">
+              <p className="truncate font-serif text-base font-semibold text-foreground">{name}</p>
+              <time className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</time>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            >
+              <VenetianMask className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-serif text-base font-semibold text-foreground">Alguien de la comunidad</p>
+              <time className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</time>
+            </div>
           </div>
-        </Link>
-        {!isOwnPost ? (
-          <FollowButton userId={post.author.id} initiallyFollowing={post.followedByCurrentUser} />
+        )}
+        {author && !isOwnPost && !anonymousForMe ? (
+          <FollowButton userId={author.id} initiallyFollowing={post.followedByCurrentUser} />
+        ) : null}
+        {anonymousForMe ? (
+          <button
+            type="button"
+            onClick={() => setReporting(true)}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Flag className="size-3.5" aria-hidden="true" />
+            Reportar
+          </button>
         ) : null}
       </div>
+
+      {post.anonymous && isOwnPost ? (
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+          <VenetianMask className="size-3.5" aria-hidden="true" />
+          Publicado en anónimo · solo vos ves que es tuyo
+        </p>
+      ) : null}
+
+      {reporting ? (
+        <ReportDialog
+          targetType="POST"
+          targetId={post.id}
+          name="esta publicación"
+          title="Reportar esta publicación"
+          onClose={() => setReporting(false)}
+        />
+      ) : null}
 
       {post.contentWarning && isOwnPost ? (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
@@ -114,17 +161,22 @@ export default function PostCard({ post }: { post: Post }) {
           listeningCount={response.listeningCount}
           isOwnPost={isOwnPost}
         />
-        <button
-          type="button"
-          onClick={() => setShowComments((current) => !current)}
-          className="inline-flex items-center gap-1.5 font-medium hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening"
-        >
-          <MessageSquare className="size-3.5" />
-          {showComments ? 'Ocultar respuestas' : 'Respuestas'}
-        </button>
+        {post.anonymous ? (
+          // Sin comentarios en anónimos (v1): si el autor comentara, su nombre lo delataría.
+          isOwnPost ? null : <span>Se responde con Presencia o Escucha</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowComments((current) => !current)}
+            className="inline-flex items-center gap-1.5 font-medium hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening"
+          >
+            <MessageSquare className="size-3.5" />
+            {showComments ? 'Ocultar respuestas' : 'Respuestas'}
+          </button>
+        )}
       </div>
 
-      {showComments ? (
+      {showComments && !post.anonymous ? (
         <div className="mt-4">
           <CommentList postId={post.id} />
         </div>

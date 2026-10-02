@@ -21,6 +21,7 @@ import ChatPage from './pages/ChatPage';
 import PostPage from './pages/PostPage';
 import CompanionModePage from './pages/CompanionModePage';
 import CreatePostPage from './pages/CreatePostPage';
+import AnonymousSpacePage from './pages/AnonymousSpacePage';
 import NotificationsPage from './pages/NotificationsPage';
 
 const WelcomePreviewPage = import.meta.env.DEV
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/anonimo" element={<AnonymousSpacePage />} />
             <Route path="/messages" element={<ConversationsPage />} />
             <Route path="/messages/:conversationId" element={<ChatPage />} />
             <Route path="/posts/:postId" element={<PostPage />} />

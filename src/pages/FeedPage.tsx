@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RefreshCw } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, RefreshCw, VenetianMask } from 'lucide-react';
 import { setNeed, setOffering, cancelNeed, cancelOffering, getMyNeed, getMyOffering } from '../api/companion';
 import { createPost, getFeed } from '../api/posts';
 import { getStatusFeed, setStatus } from '../api/statuses';
@@ -182,6 +182,21 @@ export default function FeedPage() {
           draftKey={draftKey(user.id, 'feed-composer')}
         />
       ) : null}
+
+      {/* En mobile la barra inferior no tiene lugar: acceso al espacio anónimo desde acá. */}
+      <Link
+        to="/anonimo"
+        className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm shadow-soft md:hidden"
+      >
+        <span className="flex size-9 items-center justify-center rounded-full bg-muted text-foreground/80" aria-hidden="true">
+          <VenetianMask className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium text-foreground">Espacio anónimo</span>
+          <span className="block text-xs text-muted-foreground">Para lo que cuesta contar con nombre</span>
+        </span>
+        <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+      </Link>
 
       <HomePresencePulse
         onSeekCompany={seekCompany}
