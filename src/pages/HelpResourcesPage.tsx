@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, MessageCircle, Phone } from 'lucide-react';
 import { Button, Card, PresenceGlyph, SectionTitle } from '../components/byourside/ui';
 import { BreathingExercise } from '../components/byourside/breathing-exercise';
@@ -123,6 +123,12 @@ export default function HelpResourcesPage() {
           </Card>
         </div>
       </section>
+
+      <p className="text-center text-sm">
+        <Link to="/normas" className="font-medium text-listening-strong underline-offset-2 hover:underline">
+          Normas de la comunidad
+        </Link>
+      </p>
 
       <p className="flex items-center justify-center gap-2 pb-2 text-sm text-muted-foreground">
         <Logo />

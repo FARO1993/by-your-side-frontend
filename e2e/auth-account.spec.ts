@@ -116,6 +116,10 @@ async function installApi(page: Page, hooks?: { refresh?: (route: Route) => Prom
 test.describe('flujos de cuenta con API mockeada', () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Estos flujos prueban la cuenta, no el onboarding de normas (cubierto en auth.spec).
+    await page.addInitScript((id) => {
+      localStorage.setItem(`byyourside.guidelinesAccepted.v1.${id}`, 'true');
+    }, '11111111-1111-4111-8111-111111111111');
   });
 
   test('register muestra la bienvenida y después entra al feed', async ({ page }) => {

@@ -40,7 +40,7 @@ function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/posts')) return 'post';
   if (pathname.startsWith('/discover')) return 'discover';
   if (pathname.startsWith('/companion')) return 'companion';
-  if (pathname.startsWith('/help')) return 'help';
+  if (pathname.startsWith('/help') || pathname.startsWith('/normas')) return 'help';
   if (pathname.startsWith('/create')) return 'create';
   if (pathname.startsWith('/notifications')) return 'notifications';
   if (pathname.startsWith('/login')) return 'login';
@@ -49,7 +49,7 @@ function routeFromPath(pathname: string): AppShellRoute {
 }
 
 function widthFromPath(pathname: string): AppShellWidth {
-  if (pathname.startsWith('/profile') || pathname.startsWith('/discover') || pathname.startsWith('/companion') || pathname.startsWith('/help')) {
+  if (pathname.startsWith('/profile') || pathname.startsWith('/discover') || pathname.startsWith('/companion') || pathname.startsWith('/help') || pathname.startsWith('/normas')) {
     return '2xl';
   }
   return 'xl';
