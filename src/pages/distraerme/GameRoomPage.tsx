@@ -8,6 +8,7 @@ import Avatar from '../../components/Avatar';
 import { GameShell } from '../../components/games/GameShell';
 import { MemoryTogetherBoard } from '../../components/games/together/MemoryTogetherBoard';
 import { PuzzleTogetherBoard } from '../../components/games/together/PuzzleTogetherBoard';
+import { GardenTogetherBoard } from '../../components/games/together/GardenTogetherBoard';
 import { Button, Card } from '../../components/byourside/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useGameRoom } from '../../hooks/useGameRoom';
@@ -110,8 +111,14 @@ function GameRoomView({ roomId }: { roomId: string | undefined }) {
 
   return (
     <GameShell
-      title={`${gameName} juntos`}
-      subtitle={room.game === 'PUZZLE' ? 'Sin turnos y sin apuro. No hace falta hablar: alcanza con estar.' : 'Sin apuro y sin ganadores. Pueden salir cuando quieran.'}
+      title={room.game === 'GARDEN' ? 'Jardín compartido' : `${gameName} juntos`}
+      subtitle={
+        room.game === 'PUZZLE'
+          ? 'Sin turnos y sin apuro. No hace falta hablar: alcanza con estar.'
+          : room.game === 'GARDEN'
+            ? 'Un jardín de los dos. Nada se marchita: los espera como lo dejaron.'
+            : 'Sin apuro y sin ganadores. Pueden salir cuando quieran.'
+      }
       backTo="/distraerme"
       actions={
         room.status === 'ACTIVE' ? (
@@ -172,6 +179,8 @@ function GameRoomView({ roomId }: { roomId: string | undefined }) {
             <MemoryTogetherBoard room={room} events={events} myId={user.id} send={send} onLeave={leaveAndGo} />
           ) : room.game === 'PUZZLE' ? (
             <PuzzleTogetherBoard room={room} events={events} myId={user.id} send={send} onLeave={leaveAndGo} />
+          ) : room.game === 'GARDEN' ? (
+            <GardenTogetherBoard room={room} events={events} myId={user.id} send={send} onLeave={leaveAndGo} />
           ) : (
             <Card className="p-5 text-sm text-muted-foreground">Este juego todavía no tiene versión de a dos.</Card>
           )}

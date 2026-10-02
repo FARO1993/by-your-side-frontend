@@ -78,3 +78,9 @@ export async function sendGameEvent(roomId: string, type: string, payload: unkno
   const response = await apiClient.post<GameEvent>(`/api/game-rooms/${roomId}/events`, { type, payload });
   return response.data;
 }
+
+/** Jugadas de partidas anteriores del mismo juego entre las mismas dos personas (hoy, el Jardín). */
+export async function getGameHistory(roomId: string): Promise<GameEvent[]> {
+  const response = await apiClient.get<GameEvent[]>(`/api/game-rooms/${roomId}/history`);
+  return response.data;
+}
