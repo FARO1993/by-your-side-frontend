@@ -141,6 +141,19 @@ export default function CompanionModePage() {
     }
   }
 
+  // Para invitar a jugar hace falta un vínculo: abrir la charla lo crea (como al escribirle).
+  async function playWith(candidate: CompanionCandidate) {
+    setOpeningUserId(candidate.user.id);
+    setOpenError(null);
+    try {
+      await getOrCreateConversation(candidate.user.id);
+      navigate(`/distraerme/invitar?con=${candidate.user.id}`);
+    } catch {
+      setOpenError('Ahora no se puede invitar a jugar. Probá escribirle.');
+      setOpeningUserId(null);
+    }
+  }
+
   async function writeTo(candidate: CompanionCandidate) {
     setOpeningUserId(candidate.user.id);
     setOpenError(null);
@@ -291,13 +304,25 @@ export default function CompanionModePage() {
                     <p className="text-sm text-muted-foreground">{CANDIDATE_OFFERING_LABEL[candidate.offeringType]}</p>
                   </div>
                 </div>
-                <Button
-                  className="w-full sm:w-auto"
-                  disabled={openingUserId === candidate.user.id}
-                  onClick={() => void writeTo(candidate)}
-                >
-                  Escribirle
-                </Button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  {need.type === 'DISTRACTION' ? (
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      disabled={openingUserId === candidate.user.id}
+                      onClick={() => void playWith(candidate)}
+                    >
+                      Jugar algo juntos
+                    </Button>
+                  ) : null}
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={openingUserId === candidate.user.id}
+                    onClick={() => void writeTo(candidate)}
+                  >
+                    Escribirle
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>

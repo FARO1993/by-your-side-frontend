@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Post, PublicUserProfile, Status, User } from '../api/types';
 
@@ -159,6 +159,10 @@ function post(authorId: string): Post {
   };
 }
 
+function InviteProbe() {
+  return <p>Invitar a jugar {useLocation().search}</p>;
+}
+
 function renderProfile(path = '/profile/me') {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -167,6 +171,7 @@ function renderProfile(path = '/profile/me') {
         <Route path="/login" element={<p>Login</p>} />
         <Route path="/feed" element={<p>Feed</p>} />
         <Route path="/messages/:conversationId" element={<p>Chat</p>} />
+        <Route path="/distraerme/invitar" element={<InviteProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -342,6 +347,8 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Acompañando' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mensajes' })).toBeInTheDocument();
+    // Sin un vínculo todavía no se ofrece invitar a jugar.
+    expect(screen.queryByRole('button', { name: 'Invitar a Luz a jugar' })).not.toBeInTheDocument();
     expect(screen.queryByText('Disponible ahora')).not.toBeInTheDocument();
     await waitFor(() => expect(api.getPublicAvailability).toHaveBeenCalledWith('other'));
     expect(screen.queryByRole('heading', { name: 'Cómo suele estar para otros' })).not.toBeInTheDocument();
@@ -367,6 +374,15 @@ describe('ProfilePage', () => {
     await userEvent.click(following);
     expect(api.unfollowUser).toHaveBeenCalledWith('other');
     expect(await screen.findByRole('button', { name: 'Acompañar' })).toBeInTheDocument();
+  });
+
+  it('invites someone you follow to play together', async () => {
+    api.getPublicProfile.mockResolvedValue(
+      profile({ id: 'other', displayName: 'Luz', username: 'luz', followedByCurrentUser: true, followState: 'FOLLOWING' }),
+    );
+    renderProfile('/profile/other');
+    await userEvent.click(await screen.findByRole('button', { name: 'Invitar a Luz a jugar' }));
+    expect(await screen.findByText('Invitar a jugar ?con=other')).toBeInTheDocument();
   });
 
   it('opens the existing conversation from Mensajes', async () => {

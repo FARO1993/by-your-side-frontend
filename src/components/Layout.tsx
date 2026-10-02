@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChatNotificationsProvider, useChatNotifications } from '../context/ChatNotificationsContext';
 import { useAuth } from '../context/AuthContext';
 import { NotificationUnreadProvider } from '../context/NotificationUnreadProvider';
+import { GameInvitationsProvider } from '../context/GameInvitationsProvider';
 import { useNotificationUnread } from '../context/notificationUnreadContext';
 import { AppShell, type AppShellRoute, type AppShellWidth } from './byourside/app-shell';
 
@@ -109,9 +110,11 @@ export default function Layout() {
   return (
     <ChatNotificationsProvider>
       <NotificationUnreadProvider>
-        <AuthenticatedAppShell>
-          <Outlet />
-        </AuthenticatedAppShell>
+        <GameInvitationsProvider>
+          <AuthenticatedAppShell>
+            <Outlet />
+          </AuthenticatedAppShell>
+        </GameInvitationsProvider>
       </NotificationUnreadProvider>
     </ChatNotificationsProvider>
   );
