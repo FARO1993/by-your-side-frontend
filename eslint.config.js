@@ -18,5 +18,14 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Los hooks viven junto a su provider a propósito: muchos tests los
+      // mockean por la ruta del archivo (vi.mock('../context/AuthContext')).
+      // Moverlos rompería esos mocks sin ningún beneficio real.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true, allowExportNames: ['useAuth', 'useChatNotifications'] },
+      ],
+    },
   },
 ])

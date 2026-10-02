@@ -33,9 +33,16 @@ export default function FeedPage() {
   const [needError, setNeedError] = useState<string | null>(null);
   const [offeringError, setOfferingError] = useState<string | null>(null);
 
+  // Recargar (Actualizar / Reintentar): marca la carga y vuelve a pedir.
   function load() {
     setLoading(true);
     setError(null);
+    fetchFeed();
+  }
+
+  // Solo pide y guarda; la carga inicial ya arranca con loading = true, así
+  // el efecto de montaje no hace setState sincrónico.
+  function fetchFeed() {
     Promise.all([getFeed(), getStatusFeed()])
       .then(([postsPage, statusesData]) => {
         setPosts(postsPage.content);
@@ -46,7 +53,7 @@ export default function FeedPage() {
   }
 
   useEffect(() => {
-    load();
+    fetchFeed();
   }, []);
 
   useEffect(() => {
