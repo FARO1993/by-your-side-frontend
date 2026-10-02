@@ -10,11 +10,14 @@ export function GameShell({
   title,
   subtitle,
   actions,
+  backTo = '/distraerme?jugar=solo',
   children,
 }: {
   title: string;
   subtitle: string;
   actions?: ReactNode;
+  /** A dónde lleva la flecha de volver. */
+  backTo?: string;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -24,7 +27,7 @@ export function GameShell({
         <button
           type="button"
           aria-label="Volver a Distraerme"
-          onClick={() => navigate('/distraerme?jugar=solo')}
+          onClick={() => navigate(backTo)}
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-card shadow-soft"
         >
           <ArrowLeft className="size-5" />

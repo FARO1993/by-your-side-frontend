@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, DoorOpen, Send } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Gamepad2, Send } from 'lucide-react';
 import { unblockUser } from '../api/blocks';
 import { getConversations, getMessages, sendMessage } from '../api/chat';
 import { getPublicProfile } from '../api/users';
@@ -221,6 +221,19 @@ export default function ChatPage() {
             </div>
             {otherUser ? (
               <div className="ml-auto flex shrink-0 items-center gap-1">
+                {relation?.blocked ? null : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Invitar a ${name} a jugar`}
+                    title="Jugar juntos"
+                    className="px-2.5"
+                    onClick={() => navigate(`/distraerme/invitar?con=${otherUser.id}`)}
+                  >
+                    <Gamepad2 className="size-4" aria-hidden="true" />
+                  </Button>
+                )}
                 {relation?.blocked ? null : (
                   <Button
                     type="button"
