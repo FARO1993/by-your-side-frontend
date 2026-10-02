@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Blocks, CircleDot, Gamepad2, Heart, LayoutGrid, UserRound, Users, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Blocks, CircleDot, Gamepad2, Heart, LayoutGrid, Sprout, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { Card } from '../../components/byourside/ui';
 import { cn } from '../../lib/cn';
 
@@ -12,6 +12,13 @@ type GameEntry = {
 };
 
 const GAMES: GameEntry[] = [
+  {
+    id: 'jardin',
+    title: 'Jardín',
+    description: 'Plantar, regar y ver florecer. Nada se marchita.',
+    icon: Sprout,
+    path: '/distraerme/jardin',
+  },
   {
     id: 'memoria',
     title: 'Memoria',
@@ -71,7 +78,7 @@ export default function DistraermePage() {
               ¿Qué te dan ganas?
             </h2>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2">
             {GAMES.map((game) => {
               const Icon = game.icon;
               const available = game.path !== null;
