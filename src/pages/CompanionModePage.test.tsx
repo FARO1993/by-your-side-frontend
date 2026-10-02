@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError } from 'axios';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CompanionCandidate, CompanionNeed, CompanionOffering } from '../api/types';
 
@@ -48,12 +48,17 @@ function candidate(offeringType: CompanionCandidate['offeringType'] = 'LISTEN'):
   };
 }
 
+function InviteProbe() {
+  return <p>Invitar a jugar {useLocation().search}</p>;
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/companion']}>
       <Routes>
         <Route path="/companion" element={<CompanionModePage />} />
         <Route path="/messages/:conversationId" element={<p>Conversación</p>} />
+        <Route path="/distraerme/invitar" element={<InviteProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -154,6 +159,26 @@ describe('CompanionModePage', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Escribirle' })[0]);
     expect(api.getOrCreateConversation).toHaveBeenCalledWith('user-2');
     expect(await screen.findByText('Conversación')).toBeInTheDocument();
+  });
+
+  it('offers to play something together when looking for distraction', async () => {
+    api.getMyNeed.mockResolvedValue(need('DISTRACTION'));
+    api.listCompatibleOfferings.mockResolvedValue([candidate('DISTRACT')]);
+    api.getOrCreateConversation.mockResolvedValue({ id: 'conversation-9' });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Jugar algo juntos' }));
+    // Abrir la charla crea el vínculo que hace falta para invitar.
+    expect(api.getOrCreateConversation).toHaveBeenCalledWith('user-2');
+    expect(await screen.findByText('Invitar a jugar ?con=user-2')).toBeInTheDocument();
+  });
+
+  it('only offers playing together when the need is distraction', async () => {
+    api.getMyNeed.mockResolvedValue(need('TALK'));
+    api.listCompatibleOfferings.mockResolvedValue([candidate('TALK')]);
+    renderPage();
+    expect(await screen.findByRole('button', { name: 'Escribirle' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Jugar algo juntos' })).not.toBeInTheDocument();
   });
 
   it('keeps the confirmed need when saving fails', async () => {

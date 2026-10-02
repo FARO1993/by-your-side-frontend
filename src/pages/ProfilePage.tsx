@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { CalendarDays, MessageCircle } from 'lucide-react';
+import { CalendarDays, Gamepad2, MessageCircle } from 'lucide-react';
 import { blockUser, unblockUser } from '../api/blocks';
 import { getOrCreateConversation } from '../api/chat';
 import { muteUser, unmuteUser } from '../api/mutes';
@@ -390,6 +390,20 @@ export default function ProfilePage() {
                   <MessageCircle className="size-4" />
                   Mensajes
                 </Button>
+                {profile.followState === 'FOLLOWING' ? (
+                  // Solo se puede invitar a vínculos conocidos: si la seguís, seguro se puede.
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 self-center"
+                    aria-label={`Invitar a ${displayName} a jugar`}
+                    onClick={() => navigate(`/distraerme/invitar?con=${profile.id}`)}
+                  >
+                    <Gamepad2 className="size-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">Jugar</span>
+                  </Button>
+                ) : null}
               </>
             )}
             {!isOwn ? (
