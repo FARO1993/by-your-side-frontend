@@ -92,7 +92,7 @@ export function Composer({
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
             <p className="text-xs text-muted-foreground">Compartís con quienes te acompañan.</p>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
               <SensitiveToggle checked={contentWarning} onChange={setContentWarning} text={content} compact />
               <Button type="submit" size="sm" disabled={!content.trim()} loading={submitting}>
                 Compartir

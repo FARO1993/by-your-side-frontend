@@ -30,7 +30,7 @@ export function SensitiveToggle({
       <label
         htmlFor={id}
         className={cn(
-          'inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 text-sm transition-colors',
+          'inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 text-sm whitespace-nowrap transition-colors',
           compact ? 'min-h-9' : 'min-h-11',
           checked ? 'border-presence/40 bg-presence-soft text-presence-strong' : 'border-border bg-background text-foreground/80',
         )}

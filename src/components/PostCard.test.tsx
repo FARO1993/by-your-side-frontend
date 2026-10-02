@@ -254,3 +254,29 @@ describe('PostCard content warning', () => {
     expect(screen.queryByText('Este post habla de algo sensible')).not.toBeInTheDocument();
   });
 });
+
+describe('PostCard anonymous', () => {
+  it('shows someone else’s anonymous post without author, follow button or comments, and lets you report the post', async () => {
+    auth.user = { id: 'me' };
+    const user = userEvent.setup();
+    renderCard(post({ anonymous: true, author: null, followedByCurrentUser: false }));
+
+    expect(screen.getByText('Alguien de la comunidad')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ana/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Acompañar|Acompañás/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Respuestas' })).not.toBeInTheDocument();
+    expect(screen.getByText('Se responde con Presencia o Escucha')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reportar' }));
+    expect(screen.getByRole('dialog', { name: 'Reportar esta publicación' })).toBeInTheDocument();
+  });
+
+  it('shows my own anonymous post with a private label', () => {
+    auth.user = { id: 'author' };
+    renderCard(post({ anonymous: true }));
+    expect(screen.getByText('Publicado en anónimo · solo vos ves que es tuyo')).toBeInTheDocument();
+    expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reportar' })).not.toBeInTheDocument();
+    auth.user = { id: 'me' };
+  });
+});

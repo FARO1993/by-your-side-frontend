@@ -26,6 +26,8 @@ function pathFromRoute(route: AppShellRoute, userId?: string): string {
       return '/create';
     case 'notifications':
       return '/notifications';
+    case 'anonymous':
+      return '/anonimo';
     case 'feed':
     case 'post':
       return '/feed';
@@ -43,6 +45,7 @@ function routeFromPath(pathname: string): AppShellRoute {
   if (pathname.startsWith('/help') || pathname.startsWith('/normas')) return 'help';
   if (pathname.startsWith('/create')) return 'create';
   if (pathname.startsWith('/notifications')) return 'notifications';
+  if (pathname.startsWith('/anonimo')) return 'anonymous';
   if (pathname.startsWith('/login')) return 'login';
   if (pathname.startsWith('/register')) return 'register';
   return 'feed';
