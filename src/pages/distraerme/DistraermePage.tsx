@@ -31,7 +31,7 @@ const GAMES: GameEntry[] = [
     title: 'Rebote',
     description: 'Una pelota, una paleta y nada que perder.',
     icon: CircleDot,
-    path: null,
+    path: '/distraerme/rebote',
   },
 ];
 

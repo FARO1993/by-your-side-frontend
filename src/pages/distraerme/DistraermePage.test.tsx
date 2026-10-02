@@ -25,12 +25,13 @@ describe('DistraermePage', () => {
     expect(screen.queryByText('Memoria')).not.toBeInTheDocument();
   });
 
-  it('then shows the games, with the unavailable ones marked as coming soon', async () => {
+  it('then shows the games, all ready to play', async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole('button', { name: /Jugar solo\/a/ }));
     expect(screen.getByRole('button', { name: /Bloques/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /Rebote/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Rebote/ })).toBeEnabled();
+    expect(screen.queryByText('Muy pronto')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Memoria/ }));
     expect(screen.getByText('Juego de memoria')).toBeInTheDocument();
   });
