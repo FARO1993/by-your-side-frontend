@@ -29,6 +29,7 @@ describe('DistraermePage', () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole('button', { name: /Jugar solo\/a/ }));
+    expect(screen.getByRole('button', { name: /Jardín/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Bloques/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Rebote/ })).toBeEnabled();
     expect(screen.queryByText('Muy pronto')).not.toBeInTheDocument();
