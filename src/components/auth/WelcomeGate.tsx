@@ -4,6 +4,8 @@ import { AnimatedWelcome } from '../byourside/animated-welcome';
 import { Button } from '../byourside/ui';
 import { useAuth } from '../../context/AuthContext';
 import { welcomeStorage } from '../../auth/welcomeStorage';
+import { guidelinesStorage } from '../../lib/communityGuidelines';
+import { CommunityOnboarding } from '../onboarding/CommunityOnboarding';
 import {
   authTransitionMs,
   disarmAuthTransition,
@@ -44,6 +46,7 @@ export function WelcomeGate() {
   const location = useLocation();
   const navigate = useNavigate();
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+  const [acceptedFor, setAcceptedFor] = useState<string | null>(null);
   const transitionArmed = useSyncExternalStore(
     subscribeAuthTransition,
     getAuthTransitionArmed,
@@ -62,7 +65,20 @@ export function WelcomeGate() {
 
   const showNewUser = welcomeStorage.shouldShow(user.id) && dismissedFor !== user.id;
   const showReturning = showReturningWelcome && !showNewUser;
-  if (!showNewUser && !showReturning) return null;
+  if (!showNewUser && !showReturning) {
+    // Normas de la comunidad: una vez por persona, después de cualquier
+    // bienvenida y nunca encima de /help (alguien puede llegar en crisis).
+    const needsGuidelines = acceptedFor !== user.id && !guidelinesStorage.hasAccepted(user.id);
+    if (!needsGuidelines || location.pathname.startsWith('/help') || location.pathname.startsWith('/normas')) return null;
+    return (
+      <CommunityOnboarding
+        onAccept={() => {
+          guidelinesStorage.accept(user.id);
+          setAcceptedFor(user.id);
+        }}
+      />
+    );
+  }
 
   function finishNewUser() {
     if (!user) return;
