@@ -10,6 +10,7 @@ import { friendlyError } from '../lib/friendlyError';
 import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../lib/visual';
 import Avatar from '../components/Avatar';
 import { DraftNotice } from '../components/byourside/draft-notice';
+import { SensitiveToggle } from '../components/byourside/sensitive-toggle';
 import { CrisisNotice } from '../components/safety/CrisisNotice';
 import { useDraft } from '../hooks/useDraft';
 import { draftKey } from '../lib/drafts';
@@ -29,6 +30,7 @@ export default function CreatePostPage() {
   const { text: content, setText: setContent, discard, restored } = useDraft(draftKey(user?.id, 'create-post'));
   const [mood, setMood] = useState<StatusMood | null>(null);
   const [visibility, setVisibility] = useState<CreatePostRequest['visibility']>('PUBLIC');
+  const [contentWarning, setContentWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const remaining = 2000 - content.length;
@@ -41,7 +43,7 @@ export default function CreatePostPage() {
     setError(null);
     try {
       if (mood) await setStatus(mood);
-      await createPost({ content: content.trim(), visibility });
+      await createPost({ content: content.trim(), visibility, contentWarning });
       discard();
       navigate('/feed');
     } catch (err) {
@@ -133,6 +135,8 @@ export default function CreatePostPage() {
               ))}
             </div>
           </div>
+
+          <SensitiveToggle checked={contentWarning} onChange={setContentWarning} text={content} />
 
           {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
 

@@ -28,7 +28,7 @@ describe('CrisisNotice', () => {
     expect(screen.getByRole('link', { name: 'Ver líneas de ayuda' })).toHaveAttribute('href', '/help');
 
     await user.click(screen.getByRole('button', { name: 'Compartir' }));
-    expect(onSubmit).toHaveBeenCalledWith('ya no quiero vivir más');
+    expect(onSubmit).toHaveBeenCalledWith('ya no quiero vivir más', { contentWarning: false });
   });
 
   it('stays quiet for everyday expressions', async () => {

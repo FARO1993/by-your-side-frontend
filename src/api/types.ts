@@ -68,6 +68,8 @@ export interface Post {
   presenceCount: number;
   listeningCount: number;
   currentUserResponseType: PostResponseType | null;
+  /** Advertencia de contenido (backend V19). Opcional: un backend anterior no lo envía. */
+  contentWarning?: boolean;
 }
 
 export interface PostResponseSummary {
@@ -90,6 +92,7 @@ export interface Page<T> {
 export interface CreatePostRequest {
   content: string;
   visibility?: 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
+  contentWarning?: boolean;
 }
 
 export interface Comment {

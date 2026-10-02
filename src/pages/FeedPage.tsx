@@ -70,10 +70,10 @@ export default function FeedPage() {
     };
   }, []);
 
-  async function handlePost(content: string) {
+  async function handlePost(content: string, { contentWarning }: { contentWarning: boolean }) {
     setSubmitting(true);
     try {
-      const post = await createPost({ content });
+      const post = await createPost({ content, contentWarning });
       setPosts((prev) => [post, ...prev]);
     } finally {
       setSubmitting(false);

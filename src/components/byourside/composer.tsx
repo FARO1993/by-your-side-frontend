@@ -6,6 +6,7 @@ import { MOOD_TONE_STYLES, STATUS_MOOD_UI } from '../../lib/visual';
 import Avatar from '../Avatar';
 import { CrisisNotice } from '../safety/CrisisNotice';
 import { DraftNotice } from './draft-notice';
+import { SensitiveToggle } from './sensitive-toggle';
 import { Button } from './ui';
 
 const CHECK_IN_MOODS: StatusMood[] = ['WELL', 'NEED_DISTRACTION', 'DIFFICULT_DAY'];
@@ -23,7 +24,7 @@ export function Composer({
 }: {
   authorName: string;
   avatarUrl?: string | null;
-  onSubmit: (content: string) => Promise<void> | void;
+  onSubmit: (content: string, options: { contentWarning: boolean }) => Promise<void> | void;
   onMood?: (mood: StatusMood) => void;
   submitting?: boolean;
   /** Clave de borrador (lib/drafts.ts). null = no guardar. */
@@ -32,14 +33,16 @@ export function Composer({
   const { text: content, setText: setContent, discard, restored } = useDraft(draftKey);
   const [mood, setMood] = useState<StatusMood | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contentWarning, setContentWarning] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!content.trim()) return;
     setSubmitError(null);
     try {
-      await onSubmit(content.trim());
+      await onSubmit(content.trim(), { contentWarning });
       setContent('');
+      setContentWarning(false);
     } catch {
       setSubmitError('No pudimos compartirlo. Tu texto sigue acá, podés intentar de nuevo.');
     }
@@ -89,9 +92,12 @@ export function Composer({
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
             <p className="text-xs text-muted-foreground">Compartís con quienes te acompañan.</p>
-            <Button type="submit" size="sm" disabled={!content.trim()} loading={submitting}>
-              Compartir
-            </Button>
+            <div className="flex items-center gap-2">
+              <SensitiveToggle checked={contentWarning} onChange={setContentWarning} text={content} compact />
+              <Button type="submit" size="sm" disabled={!content.trim()} loading={submitting}>
+                Compartir
+              </Button>
+            </div>
           </div>
         </div>
       </form>
