@@ -183,7 +183,7 @@ test.describe('flujos de cuenta con API mockeada', () => {
     await page.goto(`/reset-password?token=${token}`);
 
     await expect(page.getByText(token)).toHaveCount(0);
-    await page.getByLabel('Nueva contraseña').fill('secretpass');
+    await page.getByLabel('Nueva contraseña', { exact: true }).fill('secretpass');
     await page.getByLabel('Confirmá la contraseña').fill('secretpass');
     await page.getByRole('button', { name: 'Restablecer contraseña' }).click();
 

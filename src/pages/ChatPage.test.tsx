@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
@@ -353,5 +353,62 @@ describe('realtime connection', () => {
     renderChat();
     await screen.findByRole('log');
     expect(screen.queryByText(/Reconectando/)).not.toBeInTheDocument();
+  });
+});
+
+describe('switching conversations', () => {
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
+  const mati = { id: 'u3', username: 'mati', displayName: 'Mati', avatarUrl: null };
+  const conversations = [
+    { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 },
+    { id: 'chat-2', otherUser: mati, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 },
+  ];
+  const msg = (id: string, conversationId: string, content: string) => ({
+    id,
+    conversationId,
+    sender: conversationId === 'chat-1' ? lu : mati,
+    content,
+    read: true,
+    createdAt: '2026-10-02T12:00:00Z',
+  });
+
+  function GoTo({ to }: { to: string }) {
+    const navigate = useNavigate();
+    return (
+      <button type="button" onClick={() => navigate(to)}>
+        ir a {to}
+      </button>
+    );
+  }
+
+  it('does not let a late response from the previous chat overwrite the current one', async () => {
+    let resolveFirst: (value: unknown) => void = () => {};
+    api.getConversations.mockReset().mockResolvedValue(conversations);
+    api.getPublicProfile.mockReset().mockResolvedValue({ blockedByCurrentUser: false, mutedByCurrentUser: false });
+    api.getMessages.mockReset().mockImplementation((id: string) =>
+      id === 'chat-1'
+        ? new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
+        : Promise.resolve({ content: [msg('m2', 'chat-2', 'mensaje de Mati')] }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/messages/chat-1']}>
+        <GoTo to="/messages/chat-2" />
+        <Routes>
+          <Route path="/messages/:conversationId" element={<ChatPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'ir a /messages/chat-2' }));
+    expect(await screen.findByText('mensaje de Mati')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveFirst({ content: [msg('m1', 'chat-1', 'mensaje viejo de Lucía')] });
+    });
+    expect(screen.queryByText('mensaje viejo de Lucía')).not.toBeInTheDocument();
+    expect(screen.getByText('mensaje de Mati')).toBeInTheDocument();
   });
 });

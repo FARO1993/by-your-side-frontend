@@ -40,7 +40,10 @@ export default function ChatPage() {
   } = useDraft(conversationId ? draftKey(user?.id, `chat:${conversationId}`) : null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  // "Cargando" = todavía no terminó la carga de ESTA conversación. Derivado,
+  // sin setState sincrónico en el efecto al cambiar de conversación.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loading = loadedFor !== conversationId;
   const scroller = useRef<HTMLDivElement>(null);
   // Relación con la otra persona (bloqueo/silencio que hice YO), atada a su id
   // para que al cambiar de conversación no se arrastre la anterior.
@@ -92,24 +95,42 @@ export default function ChatPage() {
     }
   }
 
+  // Siempre la versión más reciente, sin que el efecto de carga dependa de su
+  // identidad (el provider la recrea en cada render).
+  const refreshUnreadRef = useRef(refreshUnreadCount);
   useEffect(() => {
-    if (!conversationId) return;
-    setLoading(true);
+    refreshUnreadRef.current = refreshUnreadCount;
+  });
+
+  useEffect(() => {
+    if (!conversationId) return undefined;
+    // Si se cambia de conversación antes de que termine la carga, la
+    // respuesta vieja no pisa la nueva.
+    let cancelled = false;
     Promise.all([getMessages(conversationId), getConversations()])
       .then(([messagesPage, list]) => {
+        if (cancelled) return;
         setMessages(messagesPage.content);
         setConversations(list);
         setOtherUser(list.find((item) => item.id === conversationId)?.otherUser ?? null);
-        refreshUnreadCount();
+        refreshUnreadRef.current();
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        // Sin conexión: queda la conversación vacía; el aviso de reconexión cubre el caso.
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedFor(conversationId);
+      });
 
     const unsubscribe = subscribeToUserQueue<Message>('/user/queue/messages', (message) => {
       if (message.conversationId === conversationId) {
         setMessages((prev) => mergeMessages(prev, [message]));
       }
     });
-    return unsubscribe;
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [conversationId]);
 
   useEffect(() => {

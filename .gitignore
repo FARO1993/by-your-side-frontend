@@ -26,3 +26,8 @@ dist-ssr
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Variables de entorno locales: nunca al repo (ver .env.example)
+.env
+.env.*
+!.env.example
