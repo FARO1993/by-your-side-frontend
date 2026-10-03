@@ -270,7 +270,7 @@ function NotificationRow({
   const body = (
     <>
       <span className="relative shrink-0">
-        <Avatar avatarUrl={item.actor?.avatarUrl ?? null} name={name} size="md" />
+        <Avatar avatarId={item.actor?.avatarId ?? null} name={name} size="md" />
         <KindMark type={item.type} />
       </span>
       <span className="min-w-0 flex-1">

@@ -42,7 +42,7 @@ function offering(type: CompanionOffering['type'] = 'LISTEN'): CompanionOffering
 
 function candidate(offeringType: CompanionCandidate['offeringType'] = 'LISTEN'): CompanionCandidate {
   return {
-    user: { id: 'user-2', username: 'luz', displayName: 'Luz', avatarUrl: null },
+    user: { id: 'user-2', username: 'luz', displayName: 'Luz', avatarId: null },
     offeringType,
     expiresAt: '2026-09-20T18:00:00.000Z',
   };
@@ -146,7 +146,7 @@ describe('CompanionModePage', () => {
   it('shows compatible people and opens the existing conversation', async () => {
     api.getMyNeed.mockResolvedValue(need());
     api.getMyOffering.mockResolvedValue(offering());
-    api.listCompatibleOfferings.mockResolvedValue([candidate('LISTEN'), { ...candidate('TALK'), user: { id: 'user-3', username: 'sol', displayName: 'Sol', avatarUrl: null } }]);
+    api.listCompatibleOfferings.mockResolvedValue([candidate('LISTEN'), { ...candidate('TALK'), user: { id: 'user-3', username: 'sol', displayName: 'Sol', avatarId: null } }]);
     api.getOrCreateConversation.mockResolvedValue({ id: 'conversation-9' });
     renderPage();
 

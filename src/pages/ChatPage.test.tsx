@@ -100,7 +100,7 @@ describe('chat send failures', () => {
 describe('chat safety', () => {
   const conversation = {
     id: 'chat-1',
-    otherUser: { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null },
+    otherUser: { id: 'u2', username: 'lu', displayName: 'Lucía', avatarId: null },
     lastMessageContent: null,
     lastMessageAt: null,
     unreadCount: 0,
@@ -153,7 +153,7 @@ describe('chat safety', () => {
 describe('leaving a conversation', () => {
   const conversation = {
     id: 'chat-1',
-    otherUser: { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null },
+    otherUser: { id: 'u2', username: 'lu', displayName: 'Lucía', avatarId: null },
     lastMessageContent: null,
     lastMessageAt: null,
     unreadCount: 0,
@@ -239,7 +239,7 @@ describe('leaving a conversation', () => {
 });
 
 describe('crisis support in chat', () => {
-  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarId: null };
   const conversation = { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 };
   const msg = (id: string, sender: typeof lu | { id: string }, content: string) => ({
     id,
@@ -305,7 +305,7 @@ describe('crisis support in chat', () => {
 });
 
 describe('realtime connection', () => {
-  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarId: null };
   const conversation = { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 };
   const msg = (id: string, content: string, minute: number) => ({
     id,
@@ -370,8 +370,8 @@ describe('realtime connection', () => {
 });
 
 describe('switching conversations', () => {
-  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarUrl: null };
-  const mati = { id: 'u3', username: 'mati', displayName: 'Mati', avatarUrl: null };
+  const lu = { id: 'u2', username: 'lu', displayName: 'Lucía', avatarId: null };
+  const mati = { id: 'u3', username: 'mati', displayName: 'Mati', avatarId: null };
   const conversations = [
     { id: 'chat-1', otherUser: lu, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 },
     { id: 'chat-2', otherUser: mati, lastMessageContent: null, lastMessageAt: null, unreadCount: 0 },

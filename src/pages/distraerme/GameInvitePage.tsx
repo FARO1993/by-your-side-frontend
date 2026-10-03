@@ -154,7 +154,7 @@ export default function GameInvitePage() {
           <ul className="space-y-2">
             {visible.map((person) => (
               <li key={person.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-soft">
-                <Avatar avatarUrl={person.avatarUrl} name={personName(person)} size="sm" />
+                <Avatar avatarId={person.avatarId} name={personName(person)} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{personName(person)}</span>
                   <span className="block truncate text-xs text-muted-foreground">@{person.username}</span>

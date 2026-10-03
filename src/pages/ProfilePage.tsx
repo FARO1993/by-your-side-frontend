@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { CalendarDays, Gamepad2, MessageCircle } from 'lucide-react';
@@ -14,11 +14,11 @@ import {
   getUserPosts,
   replaceCompanionPreferences,
   updateProfile,
-  uploadAvatar,
   type PublicAvailabilityView,
 } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
+import { AvatarDialog } from '../components/avatars/AvatarDialog';
 import FollowButton from '../components/FollowButton';
 import OwnRelations from '../components/OwnRelations';
 import { MoodHistoryCard } from '../components/MoodHistoryCard';
@@ -34,7 +34,7 @@ import { moodToneToBadgeTone, STATUS_MOOD_UI } from '../lib/visual';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, logout, reloadUser } = useAuth();
   const navigate = useNavigate();
   const [snapshot, setSnapshot] = useState<{
     userId: string;
@@ -49,8 +49,7 @@ export default function ProfilePage() {
   const [preferenceError, setPreferenceError] = useState<string | null>(null);
   const [preferenceSaving, setPreferenceSaving] = useState(false);
   const [preferenceSaved, setPreferenceSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [choosingAvatar, setChoosingAvatar] = useState(false);
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [bioDraft, setBioDraft] = useState('');
@@ -59,7 +58,6 @@ export default function ProfilePage() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [tab, setTab] = useState<'posts' | 'presence'>('posts');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -142,8 +140,8 @@ export default function ProfilePage() {
     );
   }
 
-  if (error || loadError || !profile) {
-    return <ErrorState description={error ?? loadError ?? 'Este perfil no está disponible.'} />;
+  if (loadError || !profile) {
+    return <ErrorState description={loadError ?? 'Este perfil no está disponible.'} />;
   }
 
   const profileId = profile.id;
@@ -158,20 +156,12 @@ export default function ProfilePage() {
   const publicPreferences = profile.companionPreferences;
   const ownPreferences = isOwn && preferences?.userId === profile.id ? preferences.types : null;
 
-  async function handleAvatar(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const updated = await uploadAvatar(file);
-      setSnapshot((prev) =>
-        prev && prev.profile.id === profileId ? { ...prev, profile: { ...prev.profile, avatarUrl: updated.avatarUrl } } : prev,
-      );
-    } catch {
-      setError('No pudimos subir la foto. Probá con otra imagen o en un rato.');
-    } finally {
-      setUploading(false);
-    }
+  function onAvatarSaved(updated: { avatarId: string | null }) {
+    setSnapshot((prev) =>
+      prev && prev.profile.id === profileId ? { ...prev, profile: { ...prev.profile, avatarId: updated.avatarId } } : prev,
+    );
+    // El avatar también se ve en la barra de arriba.
+    void reloadUser().catch(() => {});
   }
 
   async function handleMessage() {
@@ -284,10 +274,6 @@ export default function ProfilePage() {
     }
   }
 
-  function openAvatarPicker() {
-    fileInputRef.current?.click();
-  }
-
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, id: 'posts' | 'presence') {
     const order = ['posts', 'presence'] as const;
     const index = order.indexOf(id);
@@ -313,14 +299,13 @@ export default function ProfilePage() {
               <button
                 type="button"
                 className="rounded-full"
-                disabled={uploading}
-                aria-label="Cambiar foto de perfil"
-                onClick={openAvatarPicker}
+                aria-label="Cambiar avatar"
+                onClick={() => setChoosingAvatar(true)}
               >
-                <Avatar avatarUrl={profile.avatarUrl} name={displayName} size="lg" className="ring-4 ring-card" />
+                <Avatar avatarId={profile.avatarId} name={displayName} size="lg" className="ring-4 ring-card" />
               </button>
             ) : (
-              <Avatar avatarUrl={profile.avatarUrl} name={displayName} size="lg" className="ring-4 ring-card" />
+              <Avatar avatarId={profile.avatarId} name={displayName} size="lg" className="ring-4 ring-card" />
             )}
             <div className="min-w-0 pb-1">
               <h1 className="truncate font-serif text-2xl">{displayName}</h1>
@@ -369,7 +354,7 @@ export default function ProfilePage() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             {isOwn ? (
-              <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={startEdit}>
+              <Button type="button" size="sm" variant="outline" onClick={startEdit}>
                 Editar perfil
               </Button>
             ) : profile.blockedByCurrentUser ? null : (
@@ -477,7 +462,14 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+      {choosingAvatar ? (
+        <AvatarDialog
+          current={profile.avatarId}
+          name={displayName}
+          onClose={() => setChoosingAvatar(false)}
+          onSaved={onAvatarSaved}
+        />
+      ) : null}
 
       {isOwn ? <MoodHistoryCard /> : null}
 
