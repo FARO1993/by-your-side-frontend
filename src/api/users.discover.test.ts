@@ -18,7 +18,7 @@ const page = {
       username: 'ana',
       displayName: 'Ana',
       bio: null,
-      avatarUrl: null,
+      avatarId: null,
       profileVisibility: 'PUBLIC',
       followState: 'NONE',
       available: true,

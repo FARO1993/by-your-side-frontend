@@ -30,8 +30,8 @@ vi.mock('../../api/socket', () => ({
 vi.mock('../../api/chat', () => ({ getOrCreateConversation: vi.fn().mockResolvedValue({ id: 'conv-1' }) }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: me.id } }) }));
 
-const facu = { id: 'host-id', username: 'facu', displayName: 'Facu', avatarUrl: null };
-const soumia = { id: 'guest-id', username: 'soumia', displayName: 'Soumia', avatarUrl: null };
+const facu = { id: 'host-id', username: 'facu', displayName: 'Facu', avatarId: null };
+const soumia = { id: 'guest-id', username: 'soumia', displayName: 'Soumia', avatarId: null };
 const SEED = 99;
 
 function room(overrides: Partial<GameRoom> = {}): GameRoom {

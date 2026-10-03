@@ -14,7 +14,7 @@ import { getNotifications, getUnreadCount, markAllAsRead, markNotificationRead }
 
 const notification = {
   id: 'n1',
-  actor: { id: 'actor-1', username: 'facu', displayName: 'Facu', avatarUrl: null },
+  actor: { id: 'actor-1', username: 'facu', displayName: 'Facu', avatarId: null },
   type: 'NEW_POST_RESPONSE',
   postId: 'post-1',
   statusId: null,

@@ -16,14 +16,14 @@ const chipClass =
 
 export function Composer({
   authorName,
-  avatarUrl,
+  avatarId,
   onSubmit,
   onMood,
   submitting = false,
   draftKey = null,
 }: {
   authorName: string;
-  avatarUrl?: string | null;
+  avatarId?: string | null;
   onSubmit: (content: string, options: { contentWarning: boolean }) => Promise<void> | void;
   onMood?: (mood: StatusMood) => void;
   submitting?: boolean;
@@ -51,7 +51,7 @@ export function Composer({
   return (
     <section className="rounded-2xl bg-card p-4 shadow-soft sm:p-5">
       <form onSubmit={handleSubmit} className="flex gap-3">
-        <Avatar avatarUrl={avatarUrl} name={authorName} size="md" />
+        <Avatar avatarId={avatarId} name={authorName} size="md" />
         <div className="min-w-0 flex-1">
           <h2 className="font-serif text-xl text-balance sm:text-2xl">¿Cómo llegás hoy?</h2>
           <div className="mt-3 mb-4 flex flex-wrap gap-2" role="group" aria-label="Cómo llegás hoy">

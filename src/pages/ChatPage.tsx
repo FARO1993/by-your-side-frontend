@@ -207,7 +207,7 @@ export default function ChatPage() {
             >
               <ArrowLeft className="size-5" />
             </button>
-            {otherUser ? <Avatar avatarUrl={otherUser.avatarUrl} name={name} size="sm" /> : null}
+            {otherUser ? <Avatar avatarId={otherUser.avatarId} name={name} size="sm" /> : null}
             <div className="min-w-0">
               <p className="truncate font-medium">{name}</p>
               {relation?.blocked ? (

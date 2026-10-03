@@ -102,7 +102,7 @@ function GameRoomView({ roomId }: { roomId: string | undefined }) {
 
   const partnerChip = (
     <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-      <Avatar avatarUrl={partner.avatarUrl} name={partnerName} size="sm" />
+      <Avatar avatarId={partner.avatarId} name={partnerName} size="sm" />
       <span>
         Con <span className="font-medium text-foreground">{partnerName}</span>
       </span>
