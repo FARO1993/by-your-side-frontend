@@ -298,7 +298,7 @@ export default function CompanionModePage() {
             {candidates?.map((candidate) => (
               <Card key={candidate.user.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
-                  <Avatar avatarUrl={candidate.user.avatarUrl} name={candidate.user.displayName ?? candidate.user.username} />
+                  <Avatar avatarId={candidate.user.avatarId} name={candidate.user.displayName ?? candidate.user.username} />
                   <div className="min-w-0">
                     <p className="truncate font-medium text-foreground">{candidate.user.displayName ?? candidate.user.username}</p>
                     <p className="text-sm text-muted-foreground">{CANDIDATE_OFFERING_LABEL[candidate.offeringType]}</p>

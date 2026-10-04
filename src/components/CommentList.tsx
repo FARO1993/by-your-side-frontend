@@ -56,7 +56,7 @@ export default function CommentList({ postId }: { postId: string }) {
         const name = comment.author.displayName || comment.author.username;
         return (
           <div key={comment.id} className="flex gap-3">
-            <Avatar avatarUrl={comment.author.avatarUrl} name={name} size="sm" />
+            <Avatar avatarId={comment.author.avatarId} name={name} size="sm" />
             <div className="min-w-0 flex-1 rounded-xl bg-muted/60 px-3 py-2">
               <div className="flex items-baseline justify-between gap-2">
                 <strong className="text-sm text-foreground">{name}</strong>

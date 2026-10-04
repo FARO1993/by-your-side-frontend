@@ -20,8 +20,8 @@ vi.mock('../api/socket', () => ({
 }));
 vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }));
 
-const facu = { id: 'f', username: 'facu', displayName: 'Facu', avatarUrl: null };
-const me = { id: 'me', username: 'yo', displayName: 'Yo', avatarUrl: null };
+const facu = { id: 'f', username: 'facu', displayName: 'Facu', avatarId: null };
+const me = { id: 'me', username: 'yo', displayName: 'Yo', avatarId: null };
 const invitation: GameRoom = {
   id: 'room-1',
   game: 'MEMORY',

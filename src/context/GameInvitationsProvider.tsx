@@ -95,7 +95,7 @@ export function GameInvitationsProvider({ children }: { children: ReactNode }) {
             {current && !onRoomPage ? (
               <>
                 <div className="flex items-center gap-3">
-                  <Avatar avatarUrl={current.host.avatarUrl} name={personName(current.host)} size="sm" />
+                  <Avatar avatarId={current.host.avatarId} name={personName(current.host)} size="sm" />
                   <p className="text-sm">
                     <span className="font-medium">{personName(current.host)}</span> te invitó a jugar{' '}
                     <span className="font-medium">{GAME_NAMES[current.game]}</span>.

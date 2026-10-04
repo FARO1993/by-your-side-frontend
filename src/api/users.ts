@@ -86,12 +86,8 @@ export async function updateProfile(payload: {
   return response.data;
 }
 
-export async function uploadAvatar(file: File): Promise<User> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await apiClient.post<User>('/api/users/me/avatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+/** Elige uno de los avatares ilustrados (o null para volver a las iniciales). No se suben fotos. */
+export async function setAvatar(avatarId: string | null): Promise<User> {
+  const response = await apiClient.put<User>('/api/users/me/avatar', { avatarId });
   return response.data;
 }

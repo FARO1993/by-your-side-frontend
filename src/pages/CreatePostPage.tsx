@@ -99,7 +99,7 @@ export default function CreatePostPage() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <Avatar avatarUrl={user?.avatarUrl} name={name} size="md" />
+                <Avatar avatarId={user?.avatarId} name={name} size="md" />
                 <div>
                   <p className="font-medium">{name}</p>
                   <p className="text-sm text-muted-foreground">Acá te leemos sin apuro.</p>

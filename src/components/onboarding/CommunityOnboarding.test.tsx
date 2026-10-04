@@ -25,7 +25,8 @@ const ana: User = {
   email: 'ana@example.com',
   displayName: 'Ana',
   bio: null,
-  avatarUrl: null,
+  // Ya tiene avatar: acá solo se prueban las normas (el paso del avatar tiene sus tests).
+  avatarId: 'hoja',
   role: 'USER',
   createdAt: '2026-09-25T00:00:00Z',
   emailVerified: true,

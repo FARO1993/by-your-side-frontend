@@ -8,7 +8,7 @@ import type { Post, PublicUserProfile, Status, User } from '../api/types';
 const api = vi.hoisted(() => ({
   getPublicProfile: vi.fn(),
   getUserPosts: vi.fn(),
-  uploadAvatar: vi.fn(),
+  setAvatar: vi.fn(),
   getUserStatus: vi.fn(),
   updateProfile: vi.fn(),
   getPublicAvailability: vi.fn(),
@@ -34,6 +34,7 @@ const auth = vi.hoisted(() => ({
   current: {
     user: null as User | null,
     logout: vi.fn(),
+    reloadUser: vi.fn(),
   },
 }));
 
@@ -44,7 +45,7 @@ vi.mock('../context/AuthContext', () => ({
 vi.mock('../api/users', () => ({
   getPublicProfile: api.getPublicProfile,
   getUserPosts: api.getUserPosts,
-  uploadAvatar: api.uploadAvatar,
+  setAvatar: api.setAvatar,
   updateProfile: api.updateProfile,
   getPublicAvailability: api.getPublicAvailability,
   getCompanionPreferences: api.getCompanionPreferences,
@@ -95,7 +96,7 @@ function account(id: string): User {
     email: 'ana@example.com',
     displayName: 'Ana',
     bio: null,
-    avatarUrl: null,
+    avatarId: null,
     role: 'USER',
     createdAt: '2026-09-15T12:00:00.000Z',
     emailVerified: true,
@@ -109,7 +110,7 @@ function profile(overrides: Partial<PublicUserProfile> = {}): PublicUserProfile 
     username: 'ana',
     displayName: 'Ana',
     bio: 'Me gusta escuchar.',
-    avatarUrl: null,
+    avatarId: null,
     createdAt: '2026-09-15T12:00:00.000Z',
     followersCount: 4,
     followingCount: 1,
@@ -126,7 +127,7 @@ function profile(overrides: Partial<PublicUserProfile> = {}): PublicUserProfile 
 function status(userId: string, mood: Status['mood']): Status {
   return {
     id: 'status-1',
-    user: { id: userId, username: 'ana', displayName: 'Ana', avatarUrl: null },
+    user: { id: userId, username: 'ana', displayName: 'Ana', avatarId: null },
     mood,
     createdAt: '2026-09-20T12:00:00.000Z',
     expiresAt: '2026-09-21T12:00:00.000Z',
@@ -138,7 +139,7 @@ function status(userId: string, mood: Status['mood']): Status {
 function incoming() {
   return {
     requestId: 'req-1',
-    otherUser: { id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null },
+    otherUser: { id: 'luz', username: 'luz', displayName: 'Luz', avatarId: null },
     createdAt: '2026-09-20T12:00:00.000Z',
     status: 'PENDING' as const,
   };
@@ -147,7 +148,7 @@ function incoming() {
 function post(authorId: string): Post {
   return {
     id: 'post-1',
-    author: { id: authorId, username: 'ana', displayName: 'Ana', avatarUrl: null },
+    author: { id: authorId, username: 'ana', displayName: 'Ana', avatarId: null },
     content: 'Hoy necesito un rato de calma.',
     visibility: 'PUBLIC',
     createdAt: '2026-09-20T12:00:00.000Z',
@@ -243,7 +244,24 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('tab', { name: 'Presencia recibida' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Cambiar contraseña' })).toHaveAttribute('href', '/account/password');
     expect(screen.getByRole('button', { name: 'Editar perfil' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cambiar foto de perfil' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cambiar avatar' })).toBeInTheDocument();
+  });
+
+  it('lets me pick an illustrated avatar instead of uploading a photo', async () => {
+    auth.current.reloadUser = vi.fn().mockResolvedValue(undefined);
+    api.setAvatar.mockResolvedValue({ ...account('me'), avatarId: 'luna' });
+    const user = userEvent.setup();
+    renderProfile();
+
+    await user.click(await screen.findByRole('button', { name: 'Cambiar avatar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Elegí tu avatar' });
+    expect(document.querySelector('input[type="file"]')).toBeNull();
+    await user.click(within(dialog).getByRole('radio', { name: 'Luna' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+
+    expect(api.setAvatar).toHaveBeenCalledWith('luna');
+    expect(auth.current.reloadUser).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Elegí tu avatar' })).not.toBeInTheDocument();
   });
 
   it('does not invent a bio or a mood', async () => {
@@ -681,7 +699,7 @@ describe('ProfilePage', () => {
     api.listOutgoingFollowRequests.mockResolvedValue([
       {
         requestId: 'req-1',
-        otherUser: { id: 'other', username: 'luz', displayName: 'Luz', avatarUrl: null },
+        otherUser: { id: 'other', username: 'luz', displayName: 'Luz', avatarId: null },
         createdAt: '2026-09-20T12:00:00.000Z',
         status: 'PENDING',
       },
@@ -698,7 +716,7 @@ describe('ProfilePage', () => {
   it('accepts an incoming request and shows that person as accompanying', async () => {
     const request = incoming();
     api.listIncomingFollowRequests.mockResolvedValueOnce([request]).mockResolvedValue([]);
-    api.getFollowers.mockResolvedValueOnce([]).mockResolvedValue([{ id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null }]);
+    api.getFollowers.mockResolvedValueOnce([]).mockResolvedValue([{ id: 'luz', username: 'luz', displayName: 'Luz', avatarId: null }]);
     api.acceptFollowRequest.mockResolvedValue({ ...request, status: 'ACCEPTED' });
     renderProfile();
     await userEvent.click(await screen.findByRole('button', { name: 'Aceptar' }));
@@ -748,7 +766,7 @@ describe('ProfilePage', () => {
     api.listOutgoingFollowRequests.mockResolvedValue([
       {
         requestId: 'req-2',
-        otherUser: { id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null },
+        otherUser: { id: 'luz', username: 'luz', displayName: 'Luz', avatarId: null },
         createdAt: '2026-09-20T12:00:00.000Z',
         status: 'PENDING',
       },
@@ -761,7 +779,7 @@ describe('ProfilePage', () => {
   });
 
   it('removes a follower without blocking or muting', async () => {
-    api.getFollowers.mockResolvedValue([{ id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null }]);
+    api.getFollowers.mockResolvedValue([{ id: 'luz', username: 'luz', displayName: 'Luz', avatarId: null }]);
     api.removeFollower.mockResolvedValue(undefined);
     renderProfile();
     await userEvent.click(await screen.findByRole('button', { name: 'Dejar de acompañarte' }));

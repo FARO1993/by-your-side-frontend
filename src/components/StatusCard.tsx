@@ -46,7 +46,7 @@ export default function StatusCard({ status: initialStatus }: { status: Status }
   return (
     <article className="animate-soft-rise overflow-hidden rounded-2xl bg-card p-5 shadow-soft sm:p-6">
       <Link to={`/profile/${status.user.id}`} className="flex items-center gap-3">
-        <Avatar avatarUrl={status.user.avatarUrl} name={name} size="md" />
+        <Avatar avatarId={status.user.avatarId} name={name} size="md" />
         <div>
           <p className="font-serif text-base font-semibold">{name}</p>
           <span

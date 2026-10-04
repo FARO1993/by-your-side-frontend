@@ -37,7 +37,7 @@ function summary(overrides: Partial<PostResponseSummary> = {}): PostResponseSumm
 function post(overrides: Partial<Post> = {}): Post {
   return {
     id: 'post-1',
-    author: { id: 'author', username: 'ana', displayName: 'Ana', avatarUrl: null },
+    author: { id: 'author', username: 'ana', displayName: 'Ana', avatarId: null },
     content: 'Hoy necesito un rato de calma.',
     visibility: 'PUBLIC',
     createdAt: '2026-09-20T12:00:00.000Z',
