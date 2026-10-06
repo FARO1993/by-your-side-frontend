@@ -59,7 +59,7 @@ function Probe() {
 
 const incoming: Notification = {
   id: 'live',
-  actor: { id: 'ana', username: 'ana', displayName: 'Ana', avatarUrl: null },
+  actor: { id: 'ana', username: 'ana', displayName: 'Ana', avatarId: null },
   type: 'NEW_FOLLOWER',
   postId: null,
   statusId: null,

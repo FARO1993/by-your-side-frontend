@@ -41,7 +41,7 @@ function user(id: string): User {
     email: 'ana@example.com',
     displayName: 'Ana',
     bio: null,
-    avatarUrl: null,
+    avatarId: null,
     role: 'USER',
     createdAt: '2026-09-25T00:00:00Z',
     emailVerified: false,

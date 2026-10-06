@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { welcomeStorage } from '../../auth/welcomeStorage';
 import { guidelinesStorage } from '../../lib/communityGuidelines';
 import { CommunityOnboarding } from '../onboarding/CommunityOnboarding';
+import { AvatarOnboarding } from '../onboarding/AvatarOnboarding';
+import { avatarPrompt } from '../../lib/avatarPrompt';
 import {
   authTransitionMs,
   disarmAuthTransition,
@@ -42,11 +44,12 @@ class WelcomeErrorBoundary extends Component<{ onContinue: () => void; children:
 }
 
 export function WelcomeGate() {
-  const { user, status, showReturningWelcome, clearReturningWelcome } = useAuth();
+  const { user, status, showReturningWelcome, clearReturningWelcome, reloadUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
   const [acceptedFor, setAcceptedFor] = useState<string | null>(null);
+  const [avatarDoneFor, setAvatarDoneFor] = useState<string | null>(null);
   const transitionArmed = useSyncExternalStore(
     subscribeAuthTransition,
     getAuthTransitionArmed,
@@ -68,13 +71,28 @@ export function WelcomeGate() {
   if (!showNewUser && !showReturning) {
     // Normas de la comunidad: una vez por persona, después de cualquier
     // bienvenida y nunca encima de /help (alguien puede llegar en crisis).
+    if (location.pathname.startsWith('/help') || location.pathname.startsWith('/normas')) return null;
     const needsGuidelines = acceptedFor !== user.id && !guidelinesStorage.hasAccepted(user.id);
-    if (!needsGuidelines || location.pathname.startsWith('/help') || location.pathname.startsWith('/normas')) return null;
+    if (needsGuidelines) {
+      return (
+        <CommunityOnboarding
+          onAccept={() => {
+            guidelinesStorage.accept(user.id);
+            setAcceptedFor(user.id);
+          }}
+        />
+      );
+    }
+    // Después de las normas, una sola vez: elegir avatar (se puede saltear).
+    const needsAvatar = !user.avatarId && avatarDoneFor !== user.id && !avatarPrompt.wasAsked(user.id);
+    if (!needsAvatar) return null;
     return (
-      <CommunityOnboarding
-        onAccept={() => {
-          guidelinesStorage.accept(user.id);
-          setAcceptedFor(user.id);
+      <AvatarOnboarding
+        name={user.displayName?.trim() || user.username}
+        onDone={() => {
+          avatarPrompt.markAsked(user.id);
+          setAvatarDoneFor(user.id);
+          void reloadUser().catch(() => {});
         }}
       />
     );

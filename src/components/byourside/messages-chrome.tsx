@@ -48,7 +48,7 @@ export function ConversationList({
                   active ? 'bg-presence-soft/50' : 'hover:bg-muted',
                 )}
               >
-                <Avatar avatarUrl={conversation.otherUser.avatarUrl} name={name} size="md" />
+                <Avatar avatarId={conversation.otherUser.avatarId} name={name} size="md" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate font-medium">{name}</p>

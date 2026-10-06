@@ -11,7 +11,7 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'me', username: 'ana', displayName: 'Ana', avatarUrl: null } }),
+  useAuth: () => ({ user: { id: 'me', username: 'ana', displayName: 'Ana', avatarId: null } }),
 }));
 
 vi.mock('../api/posts', () => ({

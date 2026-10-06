@@ -34,7 +34,7 @@ function person(overrides: Partial<DiscoverUser> = {}): DiscoverUser {
     username: 'ana',
     displayName: 'Ana',
     bio: 'Me gusta escuchar.',
-    avatarUrl: null,
+    avatarId: null,
     profileVisibility: 'PUBLIC',
     followState: 'NONE',
     available: false,

@@ -8,7 +8,7 @@ import DistraermePage from './DistraermePage';
 
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }));
 
-const person = (id: string, name: string) => ({ id, username: name.toLowerCase(), displayName: name, avatarUrl: null });
+const person = (id: string, name: string) => ({ id, username: name.toLowerCase(), displayName: name, avatarId: null });
 const activeRoom: GameRoom = {
   id: 'room-1',
   game: 'MEMORY',

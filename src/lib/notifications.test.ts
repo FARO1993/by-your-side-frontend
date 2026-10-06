@@ -5,7 +5,7 @@ import { appendNotifications, getNotificationDestination, notificationCopy, prep
 function note(overrides: Partial<Notification> = {}): Notification {
   return {
     id: 'n1',
-    actor: { id: 'actor-1', username: 'facu', displayName: 'Facu', avatarUrl: null },
+    actor: { id: 'actor-1', username: 'facu', displayName: 'Facu', avatarId: null },
     type: 'NEW_FOLLOWER',
     postId: null,
     statusId: null,

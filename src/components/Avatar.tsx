@@ -1,4 +1,6 @@
 import { cn } from '../lib/cn';
+import { isAvatarId } from '../lib/avatars';
+import { AvatarArt } from './avatars/AvatarArt';
 
 const tints = [
   'bg-presence-soft text-presence-strong',
@@ -19,17 +21,19 @@ function tintFor(name: string): string {
 }
 
 export default function Avatar({
-  avatarUrl,
+  avatarId,
   name,
   size = 'md',
   className,
 }: {
-  avatarUrl?: string | null;
+  /** Uno de los avatares ilustrados; si no hay (o no se reconoce), iniciales. */
+  avatarId?: string | null;
   name: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
   const sizeClass = { sm: 'size-9 text-sm', md: 'size-11 text-base', lg: 'size-16 text-xl' }[size];
+  const illustrated = isAvatarId(avatarId) ? avatarId : null;
 
   return (
     <div
@@ -37,12 +41,12 @@ export default function Avatar({
       className={cn(
         'overflow-hidden rounded-full font-medium ring-1 ring-foreground/[0.06]',
         sizeClass,
-        !avatarUrl ? tintFor(name) : 'bg-muted',
+        !illustrated && tintFor(name),
         className,
       )}
     >
-      {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="size-full object-cover" />
+      {illustrated ? (
+        <AvatarArt id={illustrated} className="size-full" />
       ) : (
         <span className="flex size-full items-center justify-center">{initialsFrom(name)}</span>
       )}

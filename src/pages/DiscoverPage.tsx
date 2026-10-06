@@ -170,7 +170,7 @@ function PersonRow({ person }: { person: DiscoverUser }) {
           className="min-w-0 flex-1 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-listening"
         >
           <span className="flex items-start gap-3">
-            <Avatar avatarUrl={person.avatarUrl} name={displayName} size="md" className="shrink-0" />
+            <Avatar avatarId={person.avatarId} name={displayName} size="md" className="shrink-0" />
             <span className="min-w-0">
               <span className="block truncate font-medium text-foreground">{displayName}</span>
               <span className="block truncate text-sm text-muted-foreground">@{person.username}</span>

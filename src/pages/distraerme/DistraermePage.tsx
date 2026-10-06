@@ -105,7 +105,7 @@ export default function DistraermePage() {
                     onClick={() => navigate(`/distraerme/sala/${room.id}`)}
                     className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft hover:shadow-lift"
                   >
-                    <Avatar avatarUrl={partner.avatarUrl} name={name} size="sm" />
+                    <Avatar avatarId={partner.avatarId} name={name} size="sm" />
                     <span className="text-sm">{label}</span>
                   </button>
                 </li>

@@ -186,7 +186,7 @@ export default function FeedPage() {
       {user ? (
         <Composer
           authorName={fullName}
-          avatarUrl={user.avatarUrl}
+          avatarId={user.avatarId}
           onSubmit={handlePost}
           onMood={handleMood}
           submitting={submitting}

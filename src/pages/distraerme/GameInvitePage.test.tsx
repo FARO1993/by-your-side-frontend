@@ -14,8 +14,8 @@ vi.mock('../../api/follows', () => ({ getFollowing: mocks.getFollowing }));
 vi.mock('../../api/gameRooms', () => ({ inviteToGame: mocks.inviteToGame }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }));
 
-const soumia = { id: 's', username: 'soumia', displayName: 'Soumia', avatarUrl: null };
-const lu = { id: 'l', username: 'lu', displayName: 'Lu', avatarUrl: null };
+const soumia = { id: 's', username: 'soumia', displayName: 'Soumia', avatarId: null };
+const lu = { id: 'l', username: 'lu', displayName: 'Lu', avatarId: null };
 
 function renderPage(path = '/distraerme/invitar') {
   render(

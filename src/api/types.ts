@@ -13,7 +13,7 @@ export interface User {
   email: string;
   displayName: string | null;
   bio: string | null;
-  avatarUrl: string | null;
+  avatarId: string | null;
   role: string;
   createdAt: string;
   emailVerified: boolean;
@@ -46,7 +46,7 @@ export interface UserSummary {
   id: string;
   username: string;
   displayName: string | null;
-  avatarUrl: string | null;
+  avatarId: string | null;
 }
 
 export type PostResponseType =
@@ -126,7 +126,7 @@ export interface PublicUserProfile {
   username: string;
   displayName: string | null;
   bio: string | null;
-  avatarUrl: string | null;
+  avatarId: string | null;
   createdAt: string;
   followersCount: number;
   followingCount: number;
@@ -146,7 +146,7 @@ export interface DiscoverUser {
   username: string;
   displayName: string | null;
   bio: string | null;
-  avatarUrl: string | null;
+  avatarId: string | null;
   profileVisibility: ProfileVisibility;
   followState: DiscoverFollowState;
   available: boolean;

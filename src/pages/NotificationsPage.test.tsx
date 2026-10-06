@@ -42,7 +42,7 @@ import NotificationsPage from './NotificationsPage';
 function note(overrides: Partial<Notification> = {}): Notification {
   return {
     id: 'n1',
-    actor: { id: 'actor-1', username: 'facu', displayName: 'Facu Test', avatarUrl: null },
+    actor: { id: 'actor-1', username: 'facu', displayName: 'Facu Test', avatarId: null },
     type: 'NEW_FOLLOWER',
     postId: null,
     statusId: null,
@@ -175,22 +175,22 @@ describe('NotificationsPage', () => {
           id: 'comment',
           type: 'NEW_COMMENT',
           postId: 'post-9',
-          actor: { id: 'luz', username: 'luz', displayName: 'Luz', avatarUrl: null },
+          actor: { id: 'luz', username: 'luz', displayName: 'Luz', avatarId: null },
         }),
         note({
           id: 'status',
           type: 'NEW_STATUS_REACTION',
-          actor: { id: 'sol', username: 'sol', displayName: 'Sol', avatarUrl: null },
+          actor: { id: 'sol', username: 'sol', displayName: 'Sol', avatarId: null },
         }),
         note({
           id: 'request',
           type: 'FOLLOW_REQUEST_RECEIVED',
-          actor: { id: 'rio', username: 'rio', displayName: 'Río', avatarUrl: null },
+          actor: { id: 'rio', username: 'rio', displayName: 'Río', avatarId: null },
         }),
         note({
           id: 'accepted',
           type: 'FOLLOW_REQUEST_ACCEPTED',
-          actor: { id: 'mar', username: 'mar', displayName: 'Mar', avatarUrl: null },
+          actor: { id: 'mar', username: 'mar', displayName: 'Mar', avatarId: null },
         }),
       ]),
     );
@@ -217,8 +217,8 @@ describe('NotificationsPage', () => {
     api.getNotifications.mockResolvedValue(
       page([
         note({ id: 'today', createdAt: daysAgo(0) }),
-        note({ id: 'yesterday', createdAt: daysAgo(1), actor: { id: 'a2', username: 'ana', displayName: 'Ana', avatarUrl: null } }),
-        note({ id: 'older', createdAt: daysAgo(4), actor: { id: 'a3', username: 'leo', displayName: 'Leo', avatarUrl: null } }),
+        note({ id: 'yesterday', createdAt: daysAgo(1), actor: { id: 'a2', username: 'ana', displayName: 'Ana', avatarId: null } }),
+        note({ id: 'older', createdAt: daysAgo(4), actor: { id: 'a3', username: 'leo', displayName: 'Leo', avatarId: null } }),
       ]),
     );
     renderPage();
@@ -279,7 +279,7 @@ describe('NotificationsPage', () => {
           id: 'live',
           type: 'NEW_POST_RESPONSE',
           postId: 'post-3',
-          actor: { id: 'ana', username: 'ana', displayName: 'Ana', avatarUrl: null },
+          actor: { id: 'ana', username: 'ana', displayName: 'Ana', avatarId: null },
         }),
       );
     });

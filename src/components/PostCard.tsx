@@ -57,7 +57,7 @@ export default function PostCard({ post }: { post: Post }) {
       <div className="flex items-start justify-between gap-3">
         {author && !anonymousForMe ? (
           <Link to={`/profile/${author.id}`} className="flex min-w-0 items-center gap-3">
-            <Avatar avatarUrl={author.avatarUrl} name={name} size="md" />
+            <Avatar avatarId={author.avatarId} name={name} size="md" />
             <div className="min-w-0">
               <p className="truncate font-serif text-base font-semibold text-foreground">{name}</p>
               <time className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</time>

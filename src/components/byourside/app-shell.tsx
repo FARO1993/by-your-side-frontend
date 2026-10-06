@@ -37,7 +37,7 @@ export type AppShellUser = {
   id: string;
   username: string;
   displayName: string | null;
-  avatarUrl: string | null;
+  avatarId: string | null;
 };
 
 type AppShellProps = {
@@ -344,7 +344,7 @@ function UserAvatarLink({
       aria-current={active === 'profile' ? 'page' : undefined}
       className="ml-1 rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none"
     >
-      <Avatar avatarUrl={user.avatarUrl} name={name} size="sm" />
+      <Avatar avatarId={user.avatarId} name={name} size="sm" />
     </button>
   );
 }
