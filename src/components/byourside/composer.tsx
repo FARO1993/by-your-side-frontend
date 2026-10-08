@@ -79,6 +79,7 @@ export function Composer({
             maxLength={2000}
             onChange={(event) => setContent(event.target.value)}
             placeholder="¿Cómo venís hoy? Acá te leemos sin apuro…"
+            aria-label="Lo que querés compartir"
             className="w-full resize-none bg-transparent text-[0.975rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
           <CrisisNotice text={content} className="mb-3" />

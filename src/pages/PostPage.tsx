@@ -41,8 +41,9 @@ export default function PostPage() {
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Publicación</h1>
       <Link to="/feed" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" />
+        <ArrowLeft className="size-4" aria-hidden="true" />
         Volver al feed
       </Link>
       {!ready ? <PostCardSkeleton /> : null}

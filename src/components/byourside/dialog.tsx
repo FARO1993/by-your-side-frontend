@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/cn';
+import { trapTabKey } from '../../lib/focusTrap';
 
 /**
- * Diálogo modal liviano: overlay, Escape para cerrar, foco inicial adentro
- * y devolución del foco al elemento que lo abrió.
+ * Diálogo modal liviano: overlay, Escape para cerrar, foco inicial adentro,
+ * Tab encerrado en el panel y devolución del foco al elemento que lo abrió.
  * En mobile se apoya abajo (tipo sheet); en desktop queda centrado.
  *
  * Se renderiza en un portal sobre <body>: si un ancestro tiene
@@ -46,6 +47,7 @@ export function Dialog({
     }
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') onCloseRef.current();
+      else trapTabKey(event, panel.current);
     }
     document.addEventListener('keydown', onKey);
     return () => {

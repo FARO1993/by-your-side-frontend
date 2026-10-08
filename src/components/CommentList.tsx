@@ -72,6 +72,7 @@ export default function CommentList({ postId }: { postId: string }) {
           value={content}
           onChange={(event) => setContent(event.target.value)}
           placeholder="Escribí una respuesta…"
+          aria-label="Tu respuesta"
           maxLength={500}
           required
           className="min-h-11 flex-1 rounded-xl border border-input bg-card px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-presence focus-visible:outline-none"

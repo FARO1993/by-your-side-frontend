@@ -140,7 +140,7 @@ export default function RegisterPage() {
       </p>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         ¿Ya tenés cuenta?{' '}
-        <Link to="/login" className="font-semibold text-presence hover:underline">
+        <Link to="/login" className="font-semibold text-presence-strong hover:underline">
           Ingresá
         </Link>
       </p>
