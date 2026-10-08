@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Gamepad2, RefreshCw, VenetianMask } from 'lucide-react';
 import { setNeed, setOffering, cancelNeed, cancelOffering, getMyNeed, getMyOffering } from '../api/companion';
 import { createPost, getFeed } from '../api/posts';
-import { cn } from '../lib/cn';
 import { getStatusFeed, setStatus } from '../api/statuses';
 import type { CompanionNeed, CompanionOffering, NeedType, OfferingType, Post, Status, StatusMood } from '../api/types';
 import { useAuth } from '../context/AuthContext';
+import { MoodCareCard } from '../components/MoodCareCard';
+import { localDay, moodCareStorage } from '../lib/moodCare';
 import { Composer } from '../components/byourside/composer';
 import { draftKey } from '../lib/drafts';
 import { HomePresencePulse } from '../components/byourside/home-presence-pulse';
@@ -25,8 +26,9 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
-  // Si eligió "Necesito distraerme", se le ofrece Distraerme ahí mismo.
+  // Lo que contó hoy ("Día difícil", "Necesito distraerme"…): se le responde con cuidado.
   const [lastMood, setLastMood] = useState<StatusMood | null>(null);
+  const [careDismissed, setCareDismissed] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeNeed, setActiveNeed] = useState<CompanionNeed | null>(null);
@@ -172,6 +174,16 @@ export default function FeedPage() {
   const fullName = user?.displayName?.trim() || user?.username || '';
   const greeting = greetingName(user?.displayName, user?.username);
 
+  // Ánimo de hoy: el que acaba de elegir o, si recarga, su estado de hoy.
+  const today = localDay(new Date());
+  const ownStatus = user ? statuses.find((item) => item.user.id === user.id) : undefined;
+  const todayMood =
+    lastMood ?? (ownStatus && localDay(new Date(ownStatus.createdAt)) === today ? ownStatus.mood : null);
+  const careMood =
+    todayMood && user && careDismissed !== `${today}:${todayMood}` && !moodCareStorage.isDismissed(user.id, todayMood)
+      ? todayMood
+      : null;
+
   return (
     <div className="space-y-5">
       <header>
@@ -194,26 +206,20 @@ export default function FeedPage() {
         />
       ) : null}
 
-      {lastMood === 'NEED_DISTRACTION' ? (
-        <Link
-          to="/distraerme"
-          className="flex items-center gap-3 rounded-2xl bg-listening-soft px-4 py-3 text-sm animate-soft-rise"
-        >
-          <Gamepad2 className="size-5 shrink-0 text-listening-strong" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium text-foreground">¿Querés distraerte un rato?</span>
-            <span className="block text-xs text-muted-foreground">Juegos tranquilos, sin apuro y sin puntajes.</span>
-          </span>
-          <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-        </Link>
+      {careMood && user ? (
+        <MoodCareCard
+          key={careMood}
+          mood={careMood}
+          onDismiss={() => {
+            moodCareStorage.dismiss(user.id, careMood);
+            setCareDismissed(`${localDay(new Date())}:${careMood}`);
+          }}
+        />
       ) : null}
 
       <Link
         to="/distraerme"
-        className={cn(
-          'flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm shadow-soft',
-          lastMood === 'NEED_DISTRACTION' && 'hidden',
-        )}
+        className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm shadow-soft"
       >
         <span className="flex size-9 items-center justify-center rounded-full bg-listening-soft text-listening-strong" aria-hidden="true">
           <Gamepad2 className="size-4" />

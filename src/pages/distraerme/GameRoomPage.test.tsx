@@ -197,7 +197,8 @@ describe('GameRoomPage', () => {
     renderRoom();
 
     expect(await screen.findByText('Jardín compartido')).toBeInTheDocument();
-    expect(screen.getByText(/Lo vienen cuidando juntos desde el 20 de septiembre/)).toBeInTheDocument();
+    // La historia llega después que la sala: hay que esperarla.
+    expect(await screen.findByText(/Lo vienen cuidando juntos desde el 20 de septiembre/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cantero 1: Girasol, semilla. Regar' })).toBeInTheDocument();
 
     // Riego el girasol de la otra vez y planto una lavanda.
