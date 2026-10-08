@@ -233,6 +233,12 @@
   to { transform: translateX(0); }
 }
 
+/* Aparece de golpe después de una espera (sin movimiento). */
+@keyframes delayed-appear {
+  from { visibility: hidden; }
+  to { visibility: visible; }
+}
+
 @keyframes skeleton-shimmer {
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
@@ -260,6 +266,10 @@
 
 @utility animate-flow {
   animation: flow 14s linear infinite;
+}
+
+@utility animate-delayed-appear {
+  animation: delayed-appear 0s linear 300ms both;
 }
 
 @utility animate-soft-rise {

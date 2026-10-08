@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChatNotificationsProvider, useChatNotifications } from '../context/ChatNotificationsContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { NotificationUnreadProvider } from '../context/NotificationUnreadProvide
 import { GameInvitationsProvider } from '../context/GameInvitationsProvider';
 import { useNotificationUnread } from '../context/notificationUnreadContext';
 import { AppShell, type AppShellRoute, type AppShellWidth } from './byourside/app-shell';
+import { PageFallback } from './PageFallback';
 
 function pathFromRoute(route: AppShellRoute, userId?: string): string {
   switch (route) {
@@ -112,7 +113,9 @@ export default function Layout() {
       <NotificationUnreadProvider>
         <GameInvitationsProvider>
           <AuthenticatedAppShell>
-            <Outlet />
+            <Suspense fallback={<PageFallback />}>
+              <Outlet />
+            </Suspense>
           </AuthenticatedAppShell>
         </GameInvitationsProvider>
       </NotificationUnreadProvider>
@@ -127,7 +130,9 @@ export function HelpLayout({ children }: { children: ReactNode }) {
     return (
       <ChatNotificationsProvider>
         <NotificationUnreadProvider>
-          <AuthenticatedAppShell>{children}</AuthenticatedAppShell>
+          <AuthenticatedAppShell>
+            <Suspense fallback={<PageFallback />}>{children}</Suspense>
+          </AuthenticatedAppShell>
         </NotificationUnreadProvider>
       </ChatNotificationsProvider>
     );
@@ -137,7 +142,9 @@ export function HelpLayout({ children }: { children: ReactNode }) {
   // (que llevan a rutas protegidas y solo generan confusion aca).
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">{children}</div>
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <Suspense fallback={<PageFallback />}>{children}</Suspense>
+      </div>
     </div>
   );
 }
