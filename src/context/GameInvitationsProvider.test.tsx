@@ -63,6 +63,8 @@ describe('GameInvitationsProvider', () => {
     act(() => socket.handler?.({ kind: 'INVITATION', room: invitation, event: null }));
 
     expect(screen.getByRole('region', { name: 'Invitación a jugar' })).toHaveTextContent('Facu te invitó a jugar Memoria.');
+    // Se anuncia a lectores de pantalla por una región viva que ya estaba montada.
+    expect(screen.getByRole('status')).toHaveTextContent('Facu te invitó a jugar Memoria.');
     fireEvent.click(screen.getByRole('button', { name: 'Jugar' }));
     await screen.findByText('Sala de juego');
     expect(api.acceptGameRoom).toHaveBeenCalledWith('room-1');
@@ -90,6 +92,7 @@ describe('GameInvitationsProvider', () => {
     api.acceptGameRoom.mockRejectedValue(new Error('409'));
     renderProvider();
     fireEvent.click(await screen.findByRole('button', { name: 'Jugar' }));
-    expect(await screen.findByText('Esa invitación ya no está disponible.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Esa invitación ya no está disponible.'));
+    expect(screen.getByRole('region', { name: 'Invitación a jugar' })).toHaveTextContent('Esa invitación ya no está disponible.');
   });
 });

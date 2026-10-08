@@ -5,6 +5,7 @@ import { cn } from '../../lib/cn';
 import { CommunityGuidelinesList } from '../CommunityGuidelinesList';
 import { Logo } from '../byourside/logo';
 import { Button } from '../byourside/ui';
+import { trapTabKey } from '../../lib/focusTrap';
 
 const STEPS = ['Qué es ByYourSide', 'Cómo nos cuidamos acá', 'Herramientas para cuidarte'] as const;
 
@@ -25,9 +26,18 @@ export function CommunityOnboarding({ onAccept }: { onAccept: () => void }) {
     heading.current?.focus();
   }, [step]);
 
+  // Es un modal de pantalla completa: Tab no se escapa a la app de atrás.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => trapTabKey(event, panel.current);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto bg-background">
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={headingId}

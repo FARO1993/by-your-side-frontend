@@ -18,25 +18,28 @@
 
   --border: oklch(0.9 0.01 70);
   --input: oklch(0.9 0.01 70);
-  --ring: oklch(0.7 0.12 30);
+  /* Foco visible: ≥3:1 contra el fondo (WCAG 1.4.11). */
+  --ring: oklch(0.56 0.15 32);
 
   --presence: oklch(0.71 0.13 32);
-  --presence-strong: oklch(0.56 0.15 32);
+  --presence-strong: oklch(0.54 0.15 32);
   --presence-soft: oklch(0.95 0.03 40);
-  --presence-foreground: oklch(0.99 0.01 60);
+  /* Texto sobre coral/teal: oscuro como en el modo nocturno. El blanco daba
+     2.6:1 sobre coral y 3.3:1 sobre teal; así queda ≥5:1 (WCAG AA). */
+  --presence-foreground: oklch(0.22 0.03 32);
 
   --listening: oklch(0.63 0.07 195);
   --listening-strong: oklch(0.47 0.07 197);
   --listening-soft: oklch(0.955 0.02 190);
-  --listening-foreground: oklch(0.99 0.01 190);
+  --listening-foreground: oklch(0.2 0.02 200);
 
   --primary: oklch(0.71 0.13 32);
-  --primary-foreground: oklch(0.99 0.01 60);
+  --primary-foreground: oklch(0.22 0.03 32);
   --secondary: oklch(0.955 0.01 70);
   --secondary-foreground: oklch(0.29 0.02 275);
   --accent: oklch(0.955 0.01 70);
   --accent-foreground: oklch(0.29 0.02 275);
-  --destructive: oklch(0.58 0.16 28);
+  --destructive: oklch(0.54 0.16 28);
 
   --paper: var(--cream);
   --ink: var(--foreground);

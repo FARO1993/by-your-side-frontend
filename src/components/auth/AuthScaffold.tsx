@@ -41,7 +41,7 @@ export function AuthScaffold({
     <div className="min-h-dvh bg-background">
       <div className="mx-auto grid min-h-dvh max-w-5xl grid-cols-1 lg:grid-cols-2">
         <WelcomePanel />
-        <div className="flex items-center justify-center px-4 py-10">
+        <main className="flex items-center justify-center px-4 py-10">
           <div className="w-full max-w-sm">
             <div className="mb-8 lg:hidden">
               <Logo wordmark />
@@ -50,7 +50,7 @@ export function AuthScaffold({
             <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
             <div className="mt-6 space-y-4">{children}</div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -137,7 +137,7 @@ export function HelpLayout({ children }: { children: ReactNode }) {
   // (que llevan a rutas protegidas y solo generan confusion aca).
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">{children}</div>
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">{children}</main>
     </div>
   );
 }

@@ -26,11 +26,12 @@ export function ConversationList({
       <div className="p-4">
         <h1 className="font-serif text-2xl">Mensajes</h1>
         <div className="relative mt-3">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
             value={query}
             onChange={(event) => onQuery(event.target.value)}
             placeholder="Buscar"
+            aria-label="Buscar conversaciones"
             className="min-h-10 w-full rounded-full border border-input bg-card pr-3 pl-9 text-sm focus:border-presence focus-visible:outline-none"
           />
         </div>
