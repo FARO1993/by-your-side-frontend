@@ -63,3 +63,45 @@ describe('theme toggle', () => {
     expect(screen.getAllByRole('button', { name: 'Modo nocturno' })[0]).toHaveAttribute('aria-pressed', 'true');
   });
 });
+
+describe('accessibility landmarks', () => {
+  it('offers a skip link as the first focusable element, pointing at <main>', async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await user.tab();
+    const skip = screen.getByRole('link', { name: 'Saltar al contenido' });
+    expect(skip).toHaveFocus();
+    const main = screen.getByRole('main');
+    expect(skip).toHaveAttribute('href', `#${main.id}`);
+    expect(main).toHaveTextContent('Contenido');
+  });
+
+  it('keeps a <main> landmark in the bare layout used by messages', () => {
+    render(
+      <ThemeProvider>
+        <AppShell active="messages" onNavigate={() => {}} bare>
+          <p>Chat</p>
+        </AppShell>
+      </ThemeProvider>,
+    );
+    expect(screen.getByRole('main')).toHaveTextContent('Chat');
+  });
+
+  it('names the avatar button and announces unread messages', () => {
+    render(
+      <ThemeProvider>
+        <AppShell
+          active="feed"
+          onNavigate={() => {}}
+          unread={{ messages: 2 }}
+          authenticated
+          user={{ id: 'u1', username: 'facu', displayName: null, avatarId: null }}
+        >
+          <p>Contenido</p>
+        </AppShell>
+      </ThemeProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Tu perfil' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Mensajes, hay mensajes sin leer' })).toHaveLength(2);
+  });
+});

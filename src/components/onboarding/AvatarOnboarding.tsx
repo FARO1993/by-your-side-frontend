@@ -5,6 +5,7 @@ import { friendlyError } from '../../lib/friendlyError';
 import { AvatarPicker } from '../avatars/AvatarPicker';
 import { Logo } from '../byourside/logo';
 import { Button } from '../byourside/ui';
+import { trapTabKey } from '../../lib/focusTrap';
 
 /**
  * Al entrar por primera vez: elegir cómo te ven. Se puede saltear ("Ahora
@@ -19,6 +20,14 @@ export function AvatarOnboarding({ name, onDone }: { name: string; onDone: () =>
 
   useEffect(() => {
     heading.current?.focus();
+  }, []);
+
+  // Es un modal de pantalla completa: Tab no se escapa a la app de atrás.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => trapTabKey(event, panel.current);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   async function choose() {
@@ -40,6 +49,7 @@ export function AvatarOnboarding({ name, onDone }: { name: string; onDone: () =>
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto bg-background">
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={headingId}

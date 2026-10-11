@@ -76,6 +76,10 @@ function notificationAriaLabel(count: number | undefined): string | undefined {
   return `Novedades, ${count} sin leer`;
 }
 
+function messagesLabel(count: number | undefined): string {
+  return count && count > 0 ? 'Mensajes, hay mensajes sin leer' : 'Mensajes';
+}
+
 function NotificationBadge({ count }: { count: number | undefined }) {
   const label = formatNotificationBadge(count);
   if (!label) return null;
@@ -83,6 +87,23 @@ function NotificationBadge({ count }: { count: number | undefined }) {
     <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-presence px-1 text-[0.65rem] font-semibold leading-none text-presence-foreground">
       {label}
     </span>
+  );
+}
+
+const MAIN_CONTENT_ID = 'contenido';
+
+/**
+ * Primer elemento enfocable de la página: con teclado permite saltar la
+ * navegación e ir directo al contenido. Solo se ve cuando recibe foco.
+ */
+export function SkipToContent() {
+  return (
+    <a
+      href={`#${MAIN_CONTENT_ID}`}
+      className="sr-only rounded-full bg-card px-4 py-2 text-sm font-medium text-foreground shadow-lift focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+    >
+      Saltar al contenido
+    </a>
   );
 }
 
@@ -99,6 +120,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <SkipToContent />
       <DesktopNav
         active={active}
         onNavigate={onNavigate}
@@ -114,9 +136,16 @@ export function AppShell({
       />
 
       {bare ? (
-        <div className="flex-1">{children}</div>
+        <main id={MAIN_CONTENT_ID} tabIndex={-1} style={{ outline: 'none' }} className="flex-1">
+          {children}
+        </main>
       ) : (
         <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          // El foco llega acá desde "Saltar al contenido": sin borde alrededor de toda la página
+          // (la regla global de :focus-visible está fuera de las capas de Tailwind).
+          style={{ outline: 'none' }}
           className={cn(
             'mx-auto w-full px-4 pt-6 pb-28 sm:px-6 md:pt-8 md:pb-16',
             widthClass[width],
@@ -179,7 +208,7 @@ function DesktopNav({
 
         <div className="flex items-center gap-1">
           <IconButton
-            label="Mensajes"
+            label={messagesLabel(unread?.messages)}
             className={active === 'messages' ? 'bg-presence-soft' : undefined}
             onClick={() => onNavigate('messages')}
           >
@@ -231,7 +260,7 @@ function MobileTopBar({
         <button type="button" onClick={() => onNavigate('feed')} className="mr-auto focus-visible:outline-none">
           <Logo wordmark />
         </button>
-        <IconButton label="Mensajes" onClick={() => onNavigate('messages')}>
+        <IconButton label={messagesLabel(unread?.messages)} onClick={() => onNavigate('messages')}>
           <MessageCircle className="size-5" />
           {unread?.messages && unread.messages > 0 ? (
             <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-presence ring-2 ring-background" />
@@ -342,6 +371,7 @@ function UserAvatarLink({
       data-testid="own-avatar-link"
       onClick={() => onNavigate('profile')}
       aria-current={active === 'profile' ? 'page' : undefined}
+      aria-label="Tu perfil"
       className="ml-1 rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none"
     >
       <Avatar avatarId={user.avatarId} name={name} size="sm" />
