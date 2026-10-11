@@ -89,6 +89,11 @@ export function GameInvitationsProvider({ children }: { children: ReactNode }) {
   return (
     <GameInvitationsContext.Provider value={value}>
       {children}
+      {/* Región viva siempre montada: si aparece recién con la invitación, los
+          lectores de pantalla no siempre la anuncian. */}
+      <p role="status" className="sr-only">
+        {current && !onRoomPage ? `${personName(current.host)} te invitó a jugar ${GAME_NAMES[current.game]}.` : notice}
+      </p>
       {(current && !onRoomPage) || notice ? (
         <div className="fixed inset-x-4 bottom-20 z-40 mx-auto max-w-sm md:right-6 md:bottom-6 md:left-auto md:mx-0">
           <div role="region" aria-label="Invitación a jugar" className="rounded-2xl bg-card p-4 shadow-lift animate-soft-rise">
@@ -113,7 +118,7 @@ export function GameInvitationsProvider({ children }: { children: ReactNode }) {
               </>
             ) : (
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground" role="status">
+                <p className="text-sm text-muted-foreground">
                   {notice}
                 </p>
                 <Button type="button" size="sm" variant="outline" onClick={() => setNotice('')}>

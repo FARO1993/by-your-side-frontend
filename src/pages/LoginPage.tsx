@@ -113,7 +113,7 @@ export default function LoginPage() {
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         ¿Todavía no tenés cuenta?{' '}
-        <Link to="/register" className="font-semibold text-presence hover:underline">
+        <Link to="/register" className="font-semibold text-presence-strong hover:underline">
           Unite
         </Link>
       </p>

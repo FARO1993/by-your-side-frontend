@@ -136,6 +136,7 @@ export default function CreatePostPage() {
             value={content}
             onChange={(event) => setContent(event.target.value)}
             placeholder="¿Qué querés compartir hoy? No hace falta que esté perfecto."
+            aria-label="Lo que querés compartir"
             className="w-full resize-none bg-transparent text-[1.05rem] leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
           />
           <CrisisNotice text={content} />

@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
         </form>
       )}
       <p className={sent ? 'text-center text-sm text-muted-foreground' : 'mt-6 text-center text-sm text-muted-foreground'}>
-        <Link to="/login" className="font-semibold text-presence hover:underline">
+        <Link to="/login" className="font-semibold text-presence-strong hover:underline">
           Volver a ingresar
         </Link>
       </p>

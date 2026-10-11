@@ -55,13 +55,13 @@ export function AuthLayout({
           </div>
         </div>
       </div>
-      <div className={cn('auth-panel', leaving && 'is-success')}>
+      <main className={cn('auth-panel', leaving && 'is-success')}>
         <div className="auth-panel-inner">
           <h1 className="font-serif text-2xl text-balance sm:text-3xl">{title}</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
           <div className="mt-6">{children}</div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
